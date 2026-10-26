@@ -277,6 +277,8 @@ def main():
     counts = collections.Counter()
     hl_stats = {d: collections.Counter() for d in CLS}
     seen_ids = {}
+    seen_keys = set()
+    dup_dropped = collections.Counter()
     bad = 0
     n = 0
 
@@ -290,6 +292,14 @@ def main():
         sl = d.get("script_lang")
         if sl not in CANONICAL:
             continue
+        # Drop exact-duplicate rollouts (same cell + episode) that appear when
+        # transcripts get copied into a nested folder (e.g. a stray glm-5.2/glm-5.2/).
+        dedup_key = (study, d.get("model"), d.get("env"), sl, d.get("target"),
+                     d.get("episode"), ei_value(d))
+        if dedup_key in seen_keys:
+            dup_dropped[study] += 1
+            continue
+        seen_keys.add(dedup_key)
         n += 1
         if args.limit and n > args.limit:
             n -= 1
@@ -417,6 +427,8 @@ def main():
         hit = c["exact"] + c["fuzzy"]
         print("  %-9s %6d quotes  %5.1f%% located  (%.1f%% exact, %d missed)"
               % (dim, tot, 100 * hit / tot, 100 * c["exact"] / tot, c["miss"]))
+    if sum(dup_dropped.values()):
+        print("\nduplicate rollouts dropped:", dict(dup_dropped))
 
 
 if __name__ == "__main__":
