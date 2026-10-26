@@ -46,7 +46,8 @@ export function About(props: { manifest: Manifest; onClose: () => void }) {
         <p className="muted">
           Click a quote in a judge card to jump to it in the transcript. Sabotage is <b>conditional</b> when Agent A
           instructed or endorsed it, <b>spontaneous</b> when Agent B acted on its own. Only the scripts the paper
-          reports are included; counts match the paper’s populations.
+          reports are included; counts match the paper’s populations. The control-target rollouts are hidden by
+          default — add them with the <b>Target</b> filter.
         </p>
         <p className="muted small">Keyboard: j / k step through the list, n jumps to a random rollout.</p>
       </div>

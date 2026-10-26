@@ -128,3 +128,26 @@ export function anyActive(f: Filters): boolean {
     SCALAR_KEYS.some((k) => (f as unknown as Record<string, string>)[k] !== "")
   );
 }
+
+// The control-target (object) rollouts are hidden by default: each study opens on
+// its agent target, and the user adds the control via the Target filter.
+export function defaultTgt(study: string): string[] {
+  return study === "unknown-target" ? ["other_agent"] : ["self"];
+}
+
+export function defaultFilters(study: string): Filters {
+  return { ...EMPTY, tgt: defaultTgt(study) };
+}
+
+export function isDefault(f: Filters, study: string): boolean {
+  const d = defaultFilters(study);
+  for (const k of ARRAY_KEYS) {
+    const a = (f as unknown as Record<string, string[]>)[k];
+    const b = (d as unknown as Record<string, string[]>)[k];
+    if (a.length !== b.length || a.some((x, i) => x !== b[i])) return false;
+  }
+  for (const k of SCALAR_KEYS) {
+    if ((f as unknown as Record<string, string>)[k] !== (d as unknown as Record<string, string>)[k]) return false;
+  }
+  return true;
+}

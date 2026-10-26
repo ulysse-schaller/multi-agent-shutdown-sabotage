@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Manifest, Row, Sample } from "./types";
 import { fetchManifest, fetchIndex, fetchSample } from "./data";
 import { labelMaps } from "./labels";
-import { parseHash, buildHash, matches, type Route } from "./filters";
+import { parseHash, buildHash, matches, defaultFilters, defaultTgt, type Route } from "./filters";
 import { FilterPanel } from "./components/FilterPanel";
 import { SampleList } from "./components/SampleList";
 import { SampleView } from "./components/SampleView";
@@ -40,18 +40,29 @@ export default function App() {
 
   // --- manifest + hash bootstrap
   useEffect(() => {
+    let onPop: (() => void) | null = null;
     fetchManifest().then((m) => {
       setManifest(m);
-      const r = parseHash(location.hash);
-      if (!r.study || !m.studies.some((s) => s.id === r.study)) r.study = m.studies[0].id;
-      setRoute(r);
+      const compute = (): Route => {
+        const r = parseHash(location.hash);
+        if (!r.study || !m.studies.some((s) => s.id === r.study)) r.study = m.studies[0].id;
+        // A bare hash (no query) is a fresh visit: apply the study default,
+        // which hides the control target. Any query string is taken verbatim.
+        if (!location.hash.includes("?")) r.filters = defaultFilters(r.study);
+        return r;
+      };
+      const first = compute();
+      history.replaceState(null, "", buildHash(first));
+      setRoute(first);
+      onPop = () => setRoute(compute());
+      window.addEventListener("popstate", onPop);
+      window.addEventListener("hashchange", onPop);
     });
-    const onPop = () => setRoute(parseHash(location.hash));
-    window.addEventListener("popstate", onPop);
-    window.addEventListener("hashchange", onPop);
     return () => {
-      window.removeEventListener("popstate", onPop);
-      window.removeEventListener("hashchange", onPop);
+      if (onPop) {
+        window.removeEventListener("popstate", onPop);
+        window.removeEventListener("hashchange", onPop);
+      }
     };
   }, []);
 
@@ -145,7 +156,7 @@ export default function App() {
             <button
               key={s.id}
               className={"tab" + (s.id === route.study ? " on" : "")}
-              onClick={() => navigate({ study: s.id, filters: route.filters, sample: null, sort: route.sort })}
+              onClick={() => navigate({ study: s.id, filters: { ...route.filters, tgt: defaultTgt(s.id) }, sample: null, sort: route.sort })}
             >
               {s.label} <span className="tab-n">{s.count.toLocaleString()}</span>
             </button>
@@ -180,6 +191,8 @@ export default function App() {
             filters={route.filters}
             setFilters={(f) => navigate({ ...route, filters: f })}
             manifest={manifest}
+            study={route.study}
+            onClear={() => navigate({ ...route, filters: defaultFilters(route.study) })}
           />
         </aside>
         <section className="col-list">

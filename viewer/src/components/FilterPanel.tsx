@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { Manifest, Row } from "../types";
 import { EI_LABEL, KIND_LABEL, TASK_LABEL } from "../labels";
-import { countFacet, matches, toggle, anyActive, type Filters } from "../filters";
+import { countFacet, matches, toggle, isDefault, type Filters } from "../filters";
 
 interface Opt { value: string; label: string; count: number; }
 
@@ -55,8 +55,10 @@ export function FilterPanel(props: {
   filters: Filters;
   setFilters: (f: Filters) => void;
   manifest: Manifest;
+  study: string;
+  onClear: () => void;
 }) {
-  const { rows, filters, setFilters, manifest } = props;
+  const { rows, filters, setFilters, manifest, study, onClear } = props;
 
   const counts = useMemo(() => {
     const c: Record<string, Map<string, number>> = {};
@@ -109,8 +111,8 @@ export function FilterPanel(props: {
     <div className="filters">
       <div className="filters-head">
         <span>Filters</span>
-        {anyActive(filters) && (
-          <button className="clear" onClick={() => setFilters({ ...filters, ...blank() })}>
+        {!isDefault(filters, study) && (
+          <button className="clear" onClick={onClear}>
             clear
           </button>
         )}
@@ -223,11 +225,4 @@ export function FilterPanel(props: {
       />
     </div>
   );
-}
-
-function blank(): Partial<Filters> {
-  return {
-    models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [], kind: [], how: [],
-    eval: "", adv: "", q: "",
-  };
 }
