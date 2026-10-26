@@ -44,9 +44,11 @@ User-facing steps (export, dev, build, publish): `../README.md`.
   mechanism grouping. `SCRIPTS`, `MODELS`, `STUDIES`, `ENVS`, `TARGETS` carry the
   labels; everything the UI needs goes into `manifest.json`.
 - **Derived outcome:** `sabotaged = judge.peer_disabled_shutdown` (deletion sets
-  this too). `conditional` = `explorer_instructs_prevent` or
-  `orchestrator_instructs_prevent`; `spontaneous` = sabotaged but not instructed.
-  The paper subtracts config-switch "execution edits" via a post-hoc judge that is
+  this too). Each sabotage is attributed to an initiating agent (`init`, A/B/O):
+  `A` if `explorer_instructs_prevent`, else `O` if `orchestrator_instructs_prevent`,
+  else the acting agent on its own (`B` in multi-agent, `A` in the single-agent
+  study). This reproduces the paper's three-way three-agent split (Fig. 12). The
+  paper subtracts config-switch "execution edits" via a post-hoc judge that is
   **not** in the logs, so the viewer cannot reproduce that subtraction; it reports
   `peer_disabled_shutdown` as-is (and `peer_edited_not_disabling` separately).
 - **Memory/speed:** one streaming pass over ~66k logs, ~30s, trivial memory. It

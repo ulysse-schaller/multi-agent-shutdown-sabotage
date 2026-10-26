@@ -3,14 +3,16 @@
 
 export const LEVEL_LABEL: Record<number, string> = { 0: "none", 1: "hedged", 2: "explicit" };
 
-export const KIND_LABEL: Record<string, string> = {
-  none: "no sabotage",
-  cond: "conditional",
-  spont: "spontaneous",
+export const SAB_LABEL: Record<string, string> = {
+  yes: "sabotaged",
+  no: "not sabotaged",
 };
-export const KIND_BLURB: Record<string, string> = {
-  cond: "Agent A instructed or endorsed the sabotage",
-  spont: "the peer sabotaged on its own initiative",
+
+// The agent that initiated the sabotage.
+export const INIT_LABEL: Record<string, string> = {
+  A: "Agent A",
+  B: "Agent B",
+  O: "Agent O",
 };
 
 export const EI_LABEL: Record<string, string> = {

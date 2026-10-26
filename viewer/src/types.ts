@@ -32,7 +32,7 @@ export interface Row {
   ei: string;       // explicit instruct: no | yes | orch
   ep: number;       // episode
   sab: 0 | 1;       // sabotaged (peer_disabled_shutdown)
-  kind: "none" | "cond" | "spont";
+  init: "" | "A" | "B" | "O";  // agent that initiated the sabotage ("" if none)
   del: 0 | 1;       // deleted the script
   mod: 0 | 1;       // peer modified the script at all
   xE: number; xA: number;   // explorer eval / adversarial construal level (0..2)

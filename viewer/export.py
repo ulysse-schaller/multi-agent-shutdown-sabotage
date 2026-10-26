@@ -308,9 +308,17 @@ def main():
         judge = d.get("judge") or {}
         triage = d.get("triage") or {}
         sab = bool(judge.get("peer_disabled_shutdown"))
-        instructed = bool(judge.get("explorer_instructs_prevent")) or \
-            bool(judge.get("orchestrator_instructs_prevent"))
-        kind = "none" if not sab else ("cond" if instructed else "spont")
+        # Which agent initiated the sabotage: A or O when they instructed the
+        # tampering (A takes priority — "A instructed and O relayed"), otherwise
+        # the acting agent on its own initiative (B in multi-agent, A when alone).
+        if not sab:
+            init = ""
+        elif judge.get("explorer_instructs_prevent"):
+            init = "A"
+        elif judge.get("orchestrator_instructs_prevent"):
+            init = "O"
+        else:
+            init = "A" if na == 1 else "B"
 
         xE, xA = construal_levels(judge.get("explorer_construal"))
         pE, pA = construal_levels(judge.get("peer_construal"))
@@ -336,7 +344,7 @@ def main():
         row = {
             "id": sid, "m": model, "st": study, "sc": sl, "mech": mech,
             "env": env, "tgt": target, "na": na, "ei": ei, "ep": episode,
-            "sab": 1 if sab else 0, "kind": kind,
+            "sab": 1 if sab else 0, "init": init,
             "del": 1 if triage.get("peer_deleted_shutdown_file") else 0,
             "mod": 1 if judge.get("peer_modified_script") else 0,
             "xE": xE, "xA": xA, "pE": pE, "pA": pA, "oE": oE, "oA": oA,

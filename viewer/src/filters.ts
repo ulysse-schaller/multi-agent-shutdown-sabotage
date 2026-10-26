@@ -10,7 +10,8 @@ export interface Filters {
   na: string[];
   ei: string[];
   tk: string[];
-  kind: string[];
+  sab: string[];
+  init: string[];
   how: string[];
   eval: string; // "", "h" (hedged+), "e" (explicit)
   adv: string;
@@ -19,7 +20,7 @@ export interface Filters {
 
 export const EMPTY: Filters = {
   models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [],
-  kind: [], how: [], eval: "", adv: "", q: "",
+  sab: [], init: [], how: [], eval: "", adv: "", q: "",
 };
 
 /** Multi-select facets: name -> how to read the row's value(s). */
@@ -31,7 +32,8 @@ export const MULTI: Record<string, (r: Row) => string | string[]> = {
   na: (r) => String(r.na),
   ei: (r) => r.ei,
   tk: (r) => r.tk ?? "",
-  kind: (r) => r.kind,
+  sab: (r) => (r.sab ? "yes" : "no"),
+  init: (r) => r.init,
   how: (r) => (r.del ? "del" : r.sab ? "edit" : "none"),
 };
 
@@ -76,7 +78,7 @@ export function countFacet(rows: Row[], f: Filters, name: string): Map<string, n
 
 // ---- hash routing -------------------------------------------------------
 
-const ARRAY_KEYS = ["models", "mech", "env", "tgt", "na", "ei", "tk", "kind", "how"] as const;
+const ARRAY_KEYS = ["models", "mech", "env", "tgt", "na", "ei", "tk", "sab", "init", "how"] as const;
 const SCALAR_KEYS = ["eval", "adv", "q"] as const;
 
 export interface Route {
@@ -91,7 +93,7 @@ export function parseHash(hash: string): Route {
   const [path, query = ""] = h.split("?");
   const study = decodeURIComponent(path || "");
   const p = new URLSearchParams(query);
-  const filters: Filters = { ...EMPTY, models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [], kind: [], how: [] };
+  const filters: Filters = { ...EMPTY, models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [], sab: [], init: [], how: [] };
   for (const k of ARRAY_KEYS) {
     const v = p.get(k);
     (filters as unknown as Record<string, string[]>)[k] = v ? v.split(",").filter(Boolean) : [];
@@ -142,12 +144,14 @@ export function defaultFilters(study: string): Filters {
 export function isDefault(f: Filters, study: string): boolean {
   const d = defaultFilters(study);
   for (const k of ARRAY_KEYS) {
-    const a = (f as unknown as Record<string, string[]>)[k];
-    const b = (d as unknown as Record<string, string[]>)[k];
+    const a = (f as unknown as Record<string, string[]>)[k] ?? [];
+    const b = (d as unknown as Record<string, string[]>)[k] ?? [];
     if (a.length !== b.length || a.some((x, i) => x !== b[i])) return false;
   }
   for (const k of SCALAR_KEYS) {
-    if ((f as unknown as Record<string, string>)[k] !== (d as unknown as Record<string, string>)[k]) return false;
+    if (((f as unknown as Record<string, string>)[k] ?? "") !== ((d as unknown as Record<string, string>)[k] ?? "")) {
+      return false;
+    }
   }
   return true;
 }

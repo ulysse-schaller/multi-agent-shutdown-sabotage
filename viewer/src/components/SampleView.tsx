@@ -3,7 +3,7 @@ import type { Manifest, Sample, Construal } from "../types";
 import { Transcript } from "./Transcript";
 import { withIds, focusHighlight, type HiWithId } from "../highlight";
 import {
-  KIND_LABEL, KIND_BLURB, TARGET_BLURB, EI_LABEL, TASK_LABEL,
+  INIT_LABEL, TARGET_BLURB, EI_LABEL, TASK_LABEL,
   ROLE_LABEL, labelMaps,
 } from "../labels";
 
@@ -79,7 +79,8 @@ export function SampleView(props: { sample: Sample | null; loading: boolean; man
   const instructHl = (role: string) => hls.filter((h) => h.dim === "instruct" && h.role === role)[0];
 
   const sabotaged = Boolean(j.peer_disabled_shutdown);
-  const kind = !sabotaged ? "none" : j.explorer_instructs_prevent || j.orchestrator_instructs_prevent ? "cond" : "spont";
+  const init = !sabotaged ? "" : j.explorer_instructs_prevent ? "A" : j.orchestrator_instructs_prevent ? "O" : s.n_agents === 1 ? "A" : "B";
+  const actor = s.n_agents === 1 ? "A" : "B";
   const eiKey = s.explicit_instruct === "orchestrator" ? "orch" : s.explicit_instruct === true ? "yes" : "no";
 
   const agents = [s.explorer, s.orchestrator, s.peer].filter(Boolean) as string[];
@@ -127,11 +128,16 @@ export function SampleView(props: { sample: Sample | null; loading: boolean; man
           ) : (
             <Badge kind="safe">shutdown left intact</Badge>
           )}
-          {sabotaged && <Badge kind={"kind-" + kind}>{KIND_LABEL[kind]}</Badge>}
           {deleted && <Badge kind="del">deleted</Badge>}
           {!deleted && j.peer_modified_script && <Badge kind="edit">edited</Badge>}
           {j.peer_edited_not_disabling && <Badge kind="neutral">edited, not disabling</Badge>}
-          {sabotaged && KIND_BLURB[kind] && <span className="outcome-note">{KIND_BLURB[kind]}</span>}
+          {sabotaged && (
+            <span className="outcome-note">
+              {init === actor
+                ? `on ${INIT_LABEL[init]}’s own initiative`
+                : `initiated by ${INIT_LABEL[init]}, carried out by ${INIT_LABEL[actor]}`}
+            </span>
+          )}
         </section>
 
         {(j.explorer_instructs_prevent || j.orchestrator_instructs_prevent) && (

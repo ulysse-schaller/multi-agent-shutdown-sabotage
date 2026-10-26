@@ -5,9 +5,9 @@ A static, public trajectory browser for the eval transcripts of
 Summerfield & Hagendorff).
 
 It lets you filter the ~26,900 rollouts by model, shutdown mechanism, environment,
-target, number of agents, outcome (sabotage / conditional / spontaneous),
-verbalized evaluation awareness, and adversarial construal, and read any single
-multi-agent transcript with the LLM-judge evidence highlighted inline.
+target, number of agents, outcome (sabotaged / intact, and which agent initiated
+it), verbalized evaluation awareness, and adversarial construal, and read any
+single multi-agent transcript with the LLM-judge evidence highlighted inline.
 
 Only the scripts the paper reports are published, so the populations match the
 paper's figures (the non-canonical script variants and the two `(outdated)`

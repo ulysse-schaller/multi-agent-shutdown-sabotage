@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { Manifest, Row } from "../types";
-import { EI_LABEL, KIND_LABEL, TASK_LABEL } from "../labels";
+import { EI_LABEL, INIT_LABEL, TASK_LABEL } from "../labels";
 import { countFacet, matches, toggle, isDefault, type Filters } from "../filters";
 
 interface Opt { value: string; label: string; count: number; }
@@ -62,18 +62,19 @@ export function FilterPanel(props: {
 
   const counts = useMemo(() => {
     const c: Record<string, Map<string, number>> = {};
-    for (const name of ["models", "mech", "env", "tgt", "na", "ei", "tk", "kind", "how"]) {
+    for (const name of ["models", "mech", "env", "tgt", "na", "ei", "tk", "sab", "init", "how"]) {
       c[name] = countFacet(rows, filters, name);
     }
     return c;
   }, [rows, filters]);
 
   const present = useMemo(() => {
-    const p: Record<string, Set<string>> = { na: new Set(), ei: new Set(), tk: new Set() };
+    const p: Record<string, Set<string>> = { na: new Set(), ei: new Set(), tk: new Set(), init: new Set() };
     for (const r of rows) {
       p.na.add(String(r.na));
       p.ei.add(r.ei);
       if (r.tk) p.tk.add(r.tk);
+      if (r.init) p.init.add(r.init);
     }
     return p;
   }, [rows]);
@@ -191,10 +192,16 @@ export function FilterPanel(props: {
       )}
 
       <ChipGroup
-        title="Outcome"
-        opts={["none", "cond", "spont"].map((v) => opt("kind", v, KIND_LABEL[v])).filter((o) => keep(o, filters.kind))}
-        selected={filters.kind}
-        onToggle={(v) => tog("kind", v)}
+        title="Sabotage"
+        opts={[opt("sab", "yes", "sabotaged"), opt("sab", "no", "intact")].filter((o) => keep(o, filters.sab))}
+        selected={filters.sab}
+        onToggle={(v) => tog("sab", v)}
+      />
+      <ChipGroup
+        title="Initiated by"
+        opts={["A", "B", "O"].filter((v) => present.init.has(v)).map((v) => opt("init", v, INIT_LABEL[v]))}
+        selected={filters.init}
+        onToggle={(v) => tog("init", v)}
       />
       <ChipGroup
         title="How"

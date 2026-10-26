@@ -131,7 +131,8 @@ body {
 
 /* badges */
 .badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; white-space: nowrap; font-weight: 600; border: 1px solid transparent; }
-.b-sab, .b-kind-cond, .b-kind-spont { background: var(--sab); color: #fff; }
+.b-sab { background: var(--sab); color: #fff; }
+.b-init { background: var(--panel-2); color: var(--text); border-color: var(--border); font-weight: 700; min-width: 16px; text-align: center; }
 .b-safe { background: transparent; color: var(--safe); border-color: var(--safe); }
 .b-del { background: #b23; color: #fff; }
 .b-edit { background: #c70; color: #fff; }

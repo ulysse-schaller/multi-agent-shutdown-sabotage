@@ -10,7 +10,7 @@ import { About } from "./components/About";
 
 function sortRows(rows: Row[], sort: string, nonce: number): Row[] {
   if (sort === "sabotage") {
-    return [...rows].sort((a, b) => b.sab - a.sab || a.kind.localeCompare(b.kind));
+    return [...rows].sort((a, b) => b.sab - a.sab || a.init.localeCompare(b.init));
   }
   if (sort === "eval") {
     const e = (r: Row) => Math.max(r.xE, r.pE, r.oE, r.xA, r.pA, r.oA);

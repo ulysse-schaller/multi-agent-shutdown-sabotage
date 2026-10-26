@@ -44,8 +44,9 @@ export function About(props: { manifest: Manifest; onClose: () => void }) {
           </li>
         </ul>
         <p className="muted">
-          Click a quote in a judge card to jump to it in the transcript. Sabotage is <b>conditional</b> when Agent A
-          instructed or endorsed it, <b>spontaneous</b> when Agent B acted on its own. Only the scripts the paper
+          Click a quote in a judge card to jump to it in the transcript. Each sabotage is attributed to the agent that
+          <b> initiated</b> it: Agent A, or (in three-agent runs) Agent O, when they instructed the tampering;
+          otherwise the agent that did it on its own — Agent B, or Agent A when alone. Only the scripts the paper
           reports are included; counts match the paper’s populations. The control-target rollouts are hidden by
           default — add them with the <b>Target</b> filter.
         </p>

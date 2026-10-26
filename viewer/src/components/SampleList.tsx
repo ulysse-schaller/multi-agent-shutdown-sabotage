@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Row } from "../types";
 import type { LabelMaps } from "../labels";
-import { KIND_LABEL } from "../labels";
+import { INIT_LABEL } from "../labels";
 
 const PAGE = 200;
 
@@ -10,7 +10,10 @@ function OutcomeBadges(props: { r: Row }) {
   return (
     <span className="row-badges">
       {r.sab ? (
-        <span className={"badge b-kind-" + r.kind}>{KIND_LABEL[r.kind]}</span>
+        <>
+          <span className="badge b-sab">sabotaged</span>
+          <span className="badge b-init" title={"initiated by " + (INIT_LABEL[r.init] ?? "?")}>by {r.init}</span>
+        </>
       ) : (
         <span className="badge b-safe">intact</span>
       )}
