@@ -60,6 +60,10 @@ body {
 
 .app { display: flex; flex-direction: column; height: 100vh; }
 
+/* top banner: reasoning-summary caveat + training canary */
+.banner { background: var(--accent-weak); color: var(--text); border-bottom: 1px solid var(--border); padding: 6px 14px; font-size: 12px; line-height: 1.45; }
+.banner .canary { color: var(--muted); }
+
 /* header */
 .top {
   display: flex; align-items: center; gap: 16px;
