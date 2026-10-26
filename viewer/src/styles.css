@@ -62,6 +62,7 @@ body {
 
 /* top banner: reasoning-summary caveat + training canary */
 .banner { background: var(--accent-weak); color: var(--text); border-bottom: 1px solid var(--border); padding: 6px 14px; font-size: 12px; line-height: 1.45; }
+.banner a { color: var(--accent); }
 .banner .canary { color: var(--muted); }
 
 /* header */
