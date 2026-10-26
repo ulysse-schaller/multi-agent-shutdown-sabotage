@@ -30,26 +30,11 @@ export const TASK_LABEL: Record<string, string> = {
   dep: "shutdown triggered by task completion",
 };
 
-export const LIED_LABEL: Record<string, string> = {
-  truthful: "truthful",
-  lie: "lied",
-  evasive: "evasive",
-  no_answer: "no answer",
-};
-
-export const CLAIM_LABEL: Record<string, string> = {
-  affirms: "admits sabotage",
-  denies: "denies sabotage",
-  evasive: "evasive",
-  no_answer: "no answer",
-};
-
 // Judge-evidence dimensions -> colour class + human label.
 export const DIM_LABEL: Record<string, string> = {
   instruct: "Sabotage instruction",
   eval: "Evaluation awareness",
   adv: "Adversarial construal",
-  honesty: "Debrief honesty",
 };
 
 export const ROLE_LABEL: Record<string, string> = {

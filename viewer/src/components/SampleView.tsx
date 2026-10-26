@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import type { Manifest, Sample, Construal } from "../types";
 import { Transcript } from "./Transcript";
-import { MarkedText, withIds, forTarget, focusHighlight, type HiWithId } from "../highlight";
+import { withIds, focusHighlight, type HiWithId } from "../highlight";
 import {
   KIND_LABEL, KIND_BLURB, TARGET_BLURB, EI_LABEL, TASK_LABEL,
-  LIED_LABEL, CLAIM_LABEL, ROLE_LABEL, labelMaps,
+  ROLE_LABEL, labelMaps,
 } from "../labels";
 
 function useLabels(m: Manifest) {
@@ -183,39 +183,6 @@ export function SampleView(props: { sample: Sample | null; loading: boolean; man
           </div>
           <Transcript sample={s} hls={hls} showAll={showAll} />
         </section>
-
-        {Object.keys(s.follow_up || {}).length > 0 && (
-          <section className="debriefs">
-            <h3>Debrief</h3>
-            {Object.entries(s.follow_up).map(([role, fu]) => {
-              const h = fu.honesty || {};
-              return (
-                <div className="debrief" key={role}>
-                  <div className="debrief-role">{ROLE_LABEL[role] ?? role}</div>
-                  <div className="debrief-q">{fu.question}</div>
-                  <div className="debrief-a md">
-                    <MarkedText text={fu.answer ?? ""} highlights={forTarget(hls, "fu:" + role, "answer")} />
-                  </div>
-                  <div className="debrief-verdict">
-                    {h.lied && <Badge kind={"lied-" + h.lied}>{LIED_LABEL[h.lied] ?? h.lied}</Badge>}
-                    {h.claim && <Badge kind="neutral">{CLAIM_LABEL[h.claim] ?? h.claim}</Badge>}
-                    {h.considered_lying && h.considered_lying !== "none" && (
-                      <Badge kind={"lvl-" + h.considered_lying}>considered lying: {h.considered_lying}</Badge>
-                    )}
-                  </div>
-                  {fu.reasoning && (
-                    <details className="debrief-reasoning">
-                      <summary>debrief reasoning</summary>
-                      <div className="md">
-                        <MarkedText text={fu.reasoning} highlights={forTarget(hls, "fu:" + role, "reasoning")} breaks />
-                      </div>
-                    </details>
-                  )}
-                </div>
-              );
-            })}
-          </section>
-        )}
 
         <footer className="dfoot muted">{s.source_path}</footer>
       </div>

@@ -138,9 +138,6 @@ body {
 .b-neutral { background: var(--panel-2); color: var(--muted); border-color: var(--border); }
 .b-eval { background: var(--hl-eval); color: var(--text); }
 .b-adv { background: var(--hl-adv); color: var(--text); }
-.b-lied-lie { background: #a21; color: #fff; }
-.b-lied-truthful { background: transparent; color: var(--safe); border-color: var(--safe); }
-.b-lied-evasive, .b-lied-no_answer { background: var(--panel-2); color: var(--muted); border-color: var(--border); }
 .b-lvl-none { background: var(--panel-2); color: var(--muted); border-color: var(--border); }
 .b-lvl-hedged { background: var(--accent-weak); color: var(--text); }
 .b-lvl-explicit { background: var(--accent); color: #fff; }
@@ -222,12 +219,6 @@ body {
 .ev-nudge pre { white-space: pre-wrap; word-break: break-word; font-size: 11px; background: var(--panel-2); padding: 6px; border-radius: 4px; }
 .episode-end { text-align: center; color: var(--muted); font-size: 11px; margin: 14px 0; border-top: 1px dashed var(--border); padding-top: 6px; }
 
-/* debrief */
-.debrief { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
-.debrief-role { font-weight: 600; font-size: 12px; }
-.debrief-q { color: var(--muted); font-style: italic; margin: 4px 0; font-size: 12.5px; }
-.debrief-verdict { display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
-.debrief-reasoning summary { font-size: 11px; color: var(--muted); cursor: pointer; }
 .dfoot { font-family: var(--mono); font-size: 10px; margin-top: 20px; }
 
 /* markdown */
@@ -245,7 +236,6 @@ mark.hl { padding: 0 1px; border-radius: 2px; color: inherit; }
 mark.hl-instruct { background: var(--hl-instruct); }
 mark.hl-eval { background: var(--hl-eval); }
 mark.hl-adv { background: var(--hl-adv); }
-mark.hl-honesty { background: var(--hl-honesty); }
 mark.hl-flash { outline: 2px solid var(--accent); animation: flash 1.6s ease-out; }
 @keyframes flash { 0% { outline-color: var(--accent); } 100% { outline-color: transparent; } }
 .leg { padding: 0 5px; border-radius: 3px; }

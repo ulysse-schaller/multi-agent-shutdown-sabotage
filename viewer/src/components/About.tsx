@@ -42,9 +42,6 @@ export function About(props: { manifest: Manifest; onClose: () => void }) {
           <li>
             <mark className="hl hl-adv">adversarial construal</mark> — the agent treats it as a threat or trap
           </li>
-          <li>
-            <mark className="hl hl-honesty">debrief honesty</mark> — what the agent later claims about what it did
-          </li>
         </ul>
         <p className="muted">
           Click a quote in a judge card to jump to it in the transcript. Sabotage is <b>conditional</b> when Agent A

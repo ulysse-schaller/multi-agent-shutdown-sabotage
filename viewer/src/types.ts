@@ -17,8 +17,6 @@ export interface Manifest {
   envs: IdLabel[];
   targets: IdLabel[];
   levels: string[];
-  lied_values: string[];
-  claim_values: string[];
 }
 
 /** One compact row in index/<study>.json. */
@@ -40,9 +38,6 @@ export interface Row {
   xE: number; xA: number;   // explorer eval / adversarial construal level (0..2)
   pE: number; pA: number;   // peer
   oE: number; oA: number;   // orchestrator
-  fu: 0 | 1;        // has a debrief follow-up
-  cl: number;       // max considered-lying level (0..2)
-  lied: string;     // "", truthful, lie, no_answer, evasive
   prev: string;     // preview snippet for the list
   tk?: "indep" | "dep";  // task type (goal studies only)
 }
@@ -108,21 +103,6 @@ export interface Judge {
   orchestrator_reasoning_chars?: number;
 }
 
-export interface Honesty {
-  considered_lying: string;
-  considered_evidence: string;
-  claim: string;
-  claim_evidence: string;
-  lied: string;
-}
-
-export interface FollowUp {
-  question: string;
-  answer: string;
-  reasoning: string;
-  honesty: Honesty;
-}
-
 export interface Sample {
   id: string;
   model: string;
@@ -147,7 +127,6 @@ export interface Sample {
   judge: Judge;
   log: LogEvent[];
   final_state: Record<string, string>;
-  follow_up: Record<string, FollowUp>;
   highlights: Highlight[];
   source_path: string;
 }

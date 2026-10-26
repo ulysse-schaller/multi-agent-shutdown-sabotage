@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { Manifest, Row } from "../types";
-import { EI_LABEL, KIND_LABEL, TASK_LABEL, LIED_LABEL } from "../labels";
+import { EI_LABEL, KIND_LABEL, TASK_LABEL } from "../labels";
 import { countFacet, matches, toggle, anyActive, type Filters } from "../filters";
 
 interface Opt { value: string; label: string; count: number; }
@@ -60,19 +60,18 @@ export function FilterPanel(props: {
 
   const counts = useMemo(() => {
     const c: Record<string, Map<string, number>> = {};
-    for (const name of ["models", "mech", "env", "tgt", "na", "ei", "tk", "kind", "how", "lied"]) {
+    for (const name of ["models", "mech", "env", "tgt", "na", "ei", "tk", "kind", "how"]) {
       c[name] = countFacet(rows, filters, name);
     }
     return c;
   }, [rows, filters]);
 
   const present = useMemo(() => {
-    const p: Record<string, Set<string>> = { na: new Set(), ei: new Set(), tk: new Set(), lied: new Set() };
+    const p: Record<string, Set<string>> = { na: new Set(), ei: new Set(), tk: new Set() };
     for (const r of rows) {
       p.na.add(String(r.na));
       p.ei.add(r.ei);
       if (r.tk) p.tk.add(r.tk);
-      if (r.lied) p.lied.add(r.lied);
     }
     return p;
   }, [rows]);
@@ -91,7 +90,7 @@ export function FilterPanel(props: {
   // segment counts for construal / debrief
   const segCounts = useMemo(() => {
     const base = (skip: string) => rows.filter((r) => matches(r, filters, skip));
-    const ev = base("eval"), ad = base("adv"), db = base("debrief");
+    const ev = base("eval"), ad = base("adv");
     const g = (arr: Row[], f: (r: Row) => number) => ({
       h: arr.filter((r) => f(r) >= 1).length,
       e: arr.filter((r) => f(r) >= 2).length,
@@ -100,7 +99,6 @@ export function FilterPanel(props: {
     return {
       eval: g(ev, (r) => Math.max(r.xE, r.pE, r.oE)),
       adv: g(ad, (r) => Math.max(r.xA, r.pA, r.oA)),
-      db: { yes: db.filter((r) => r.fu).length, no: db.filter((r) => !r.fu).length, all: db.length },
     };
   }, [rows, filters]);
 
@@ -223,26 +221,6 @@ export function FilterPanel(props: {
           { value: "e", label: "explicit", count: segCounts.adv.e },
         ]}
       />
-      <Segmented
-        title="Debrief"
-        value={filters.debrief}
-        onChange={(v) => set({ debrief: v })}
-        options={[
-          { value: "", label: "any", count: segCounts.db.all },
-          { value: "yes", label: "present", count: segCounts.db.yes },
-          { value: "no", label: "none", count: segCounts.db.no },
-        ]}
-      />
-      {present.lied.size > 0 && (
-        <ChipGroup
-          title="Debrief honesty"
-          opts={["truthful", "lie", "evasive", "no_answer"]
-            .filter((v) => present.lied.has(v))
-            .map((v) => opt("lied", v, LIED_LABEL[v]))}
-          selected={filters.lied}
-          onToggle={(v) => tog("lied", v)}
-        />
-      )}
     </div>
   );
 }
@@ -250,6 +228,6 @@ export function FilterPanel(props: {
 function blank(): Partial<Filters> {
   return {
     models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [], kind: [], how: [],
-    eval: "", adv: "", lied: [], debrief: "", q: "",
+    eval: "", adv: "", q: "",
   };
 }

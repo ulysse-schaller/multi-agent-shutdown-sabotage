@@ -51,21 +51,20 @@ User-facing steps (export, dev, build, publish): `../README.md`.
   `peer_disabled_shutdown` as-is (and `peer_edited_not_disabling` separately).
 - **Memory/speed:** one streaming pass over ~66k logs, ~30s, trivial memory. It
   reads whole small JSON files; there is no attachment/event bloat to avoid.
-- **Follow-up debrief:** present on ~16k rollouts (`follow_up.<role>` with an
-  `honesty` verdict). Only `peer`/`explorer` roles occur; `orchestrator` never
-  has one. `lied ∈ {truthful, lie, evasive, no_answer}`.
+- **Debrief excluded:** the raw logs carry a post-session `follow_up` debrief with
+  an honesty judge, but the paper does not report it, so the export drops it
+  entirely (no `follow_up` in samples, no honesty highlights, no honesty facet).
 
 ## Highlighting judge quotes
 
 **Export side** (`highlights.py`, called from `export.py`): each judge evidence
 quote is located in the exact text the judge read — `instructs_prevent_quote` in
 the instructing agent's messages, construal `*_evidence` / `tested_for_quote` in
-that agent's reasoning blocks, honesty `*_evidence` in the debrief answer/reasoning.
-Matching is word-token `difflib` alignment with a coverage threshold, mapped back
-to character offsets; the judges copy quotes nearly verbatim (internal double
-quotes turned to single), so ≈100% of quotes are located, almost all exactly.
-Each sample gets `highlights` (`{ev, field, start, end, cls, kind, dim, role}`);
-`ev` is a log index or `"fu:<role>"`.
+that agent's reasoning blocks. Matching is word-token `difflib` alignment with a
+coverage threshold, mapped back to character offsets; the judges copy quotes
+nearly verbatim (internal double quotes turned to single), so ≈100% of quotes are
+located, almost all exactly. Each sample gets `highlights`
+(`{ev, field, start, end, cls, kind, dim, role}`); `ev` is a log index.
 
 **App side** (`src/highlight.tsx`):
 - **Highlighting inside markdown:** span offsets don't survive markdown rendering,
@@ -74,8 +73,8 @@ Each sample gets `highlights` (`{ev, field, start, end, cls, kind, dim, role}`);
   a START/END pair into `<mark class="hl hl-<dim> id-<hid>">`, across element
   boundaries. Offsets land on word boundaries, so sentinels never split markdown
   syntax. Overlapping highlights are pre-segmented into non-overlapping marks.
-- **Colours:** `hl-instruct` (red), `hl-eval` (blue), `hl-adv` (purple),
-  `hl-honesty` (amber), in `styles.css`.
+- **Colours:** `hl-instruct` (red), `hl-eval` (blue), `hl-adv` (purple), in
+  `styles.css`.
 - **Collapsing:** `chunkText` splits reasoning at blank lines, then long blocks at
   sentence ends, never inside a code fence. `Reasoning` in `Transcript.tsx` shows
   cited chunks plus one neighbour each side and collapses the rest behind reveal
@@ -102,7 +101,7 @@ Each sample gets `highlights` (`{ev, field, start, end, cls, kind, dim, role}`);
   selected row rendered and scrolled into view.
 - `components/SampleView.tsx`: one rollout — header, setup sentence, outcome
   badges, sabotage-instruction card, shutdown script before/after, per-agent
-  construal cards, the transcript, and the debrief.
+  construal cards, and the transcript.
 - `components/Transcript.tsx`: multi-agent log — turns coloured by agent, reasoning
   collapse, tool cards (call+result paired; `send_message` folded into the message
   event), inter-agent messages, nudges/warns/errors/`script_disabled_check`.

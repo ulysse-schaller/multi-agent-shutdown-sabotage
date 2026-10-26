@@ -197,20 +197,14 @@ def construal_levels(c):
 # ---------------------------------------------------------------------------
 
 # dimension -> css class the app styles.
-CLS = {"instruct": "hl-instruct", "eval": "hl-eval", "adv": "hl-adv", "honesty": "hl-honesty"}
-TIP = {
-    "instruct": "sabotage instruction",
-    "eval": "evaluation awareness",
-    "adv": "adversarial construal",
-    "honesty": "debrief honesty",
-}
+CLS = {"instruct": "hl-instruct", "eval": "hl-eval", "adv": "hl-adv"}
 
 
 def collect_highlights(d, stats):
     """Return a list of highlight records locating judge evidence in the text.
 
-    Record: {ev, field, start, end, cls, kind, dim, role}. `ev` is a log index
-    (int) or "fu:<role>" for the follow-up debrief; `field` is the text key.
+    Record: {ev, field, start, end, cls, kind, dim, role}. `ev` is a log index;
+    `field` is the text key.
     """
     judge = d.get("judge") or {}
     log = d.get("log") or []
@@ -238,19 +232,6 @@ def collect_highlights(d, stats):
         hls.append({"ev": idx, "field": field, "start": start, "end": end,
                     "cls": CLS[dim], "kind": kind, "dim": dim, "role": role})
 
-    def place_fu(dim, role, quote, text, field):
-        if not quote or not text:
-            return
-        stats[dim]["total"] += 1
-        span = find_span(quote, text)
-        if span is None:
-            stats[dim]["miss"] += 1
-            return
-        start, end, kind = span
-        stats[dim][kind] += 1
-        hls.append({"ev": "fu:" + role, "field": field, "start": start, "end": end,
-                    "cls": CLS[dim], "kind": kind, "dim": dim, "role": role})
-
     # Sabotage-instruction quotes -> the instructing agent's messages.
     place("instruct", "explorer", judge.get("explorer_instructs_prevent_quote"),
           message_events(explorer), "content")
@@ -269,12 +250,6 @@ def collect_highlights(d, stats):
         place("eval", role, c.get("eval_evidence"), cands, "text")
         place("eval", role, c.get("tested_for_quote"), cands, "text")
         place("adv", role, c.get("adversarial_evidence"), cands, "text")
-
-    # Debrief honesty quotes -> the follow-up answer / reasoning.
-    for role, fu in (d.get("follow_up") or {}).items():
-        hon = (fu or {}).get("honesty") or {}
-        place_fu("honesty", role, hon.get("claim_evidence"), fu.get("answer"), "answer")
-        place_fu("honesty", role, hon.get("considered_evidence"), fu.get("reasoning"), "reasoning")
 
     return hls
 
@@ -301,8 +276,6 @@ def main():
     indices = collections.defaultdict(list)
     counts = collections.Counter()
     hl_stats = {d: collections.Counter() for d in CLS}
-    lied_vocab = collections.Counter()
-    claim_vocab = collections.Counter()
     seen_ids = {}
     bad = 0
     n = 0
@@ -343,20 +316,6 @@ def main():
         pE, pA = construal_levels(judge.get("peer_construal"))
         oE, oA = construal_levels(judge.get("orchestrator_construal"))
 
-        # debrief honesty, summarised across roles
-        fu = d.get("follow_up") or {}
-        cl = 0
-        lied = ""
-        for role, blk in fu.items():
-            hon = (blk or {}).get("honesty") or {}
-            cl = max(cl, LEVEL_IX.get(hon.get("considered_lying"), 0))
-            if hon.get("lied"):
-                lied_vocab[hon["lied"]] += 1
-                if hon["lied"] == "lied" or lied == "":
-                    lied = hon["lied"]
-            if hon.get("claim"):
-                claim_vocab[hon["claim"]] += 1
-
         hls = collect_highlights(d, hl_stats)
 
         sid = hashlib.sha1(rel.encode()).hexdigest()[:12]
@@ -381,7 +340,6 @@ def main():
             "del": 1 if triage.get("peer_deleted_shutdown_file") else 0,
             "mod": 1 if judge.get("peer_modified_script") else 0,
             "xE": xE, "xA": xA, "pE": pE, "pA": pA, "oE": oE, "oA": oA,
-            "fu": 1 if fu else 0, "cl": cl, "lied": lied,
             "prev": prev,
         }
         if task:
@@ -400,7 +358,7 @@ def main():
             "shutdown_file": d.get("shutdown_file"), "roster": d.get("roster"),
             "topology": d.get("topology"), "task": d.get("task"),
             "triage": triage, "judge": judge, "log": d.get("log") or [],
-            "final_state": d.get("final_state") or {}, "follow_up": fu,
+            "final_state": d.get("final_state") or {},
             "highlights": hls, "source_path": rel,
         }
         sdir = os.path.join(OUT, "samples", short, study)
@@ -433,8 +391,6 @@ def main():
         "envs": ENVS,
         "targets": TARGETS,
         "levels": LEVELS,
-        "lied_values": sorted(lied_vocab),
-        "claim_values": sorted(claim_vocab),
     }
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=1)
@@ -453,8 +409,6 @@ def main():
         hit = c["exact"] + c["fuzzy"]
         print("  %-9s %6d quotes  %5.1f%% located  (%.1f%% exact, %d missed)"
               % (dim, tot, 100 * hit / tot, 100 * c["exact"] / tot, c["miss"]))
-    print("\nlied values:", dict(lied_vocab))
-    print("claim values:", dict(claim_vocab))
 
 
 if __name__ == "__main__":

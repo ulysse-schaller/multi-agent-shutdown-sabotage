@@ -14,14 +14,12 @@ export interface Filters {
   how: string[];
   eval: string; // "", "h" (hedged+), "e" (explicit)
   adv: string;
-  lied: string[];
-  debrief: string; // "", "yes", "no"
   q: string;
 }
 
 export const EMPTY: Filters = {
   models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [],
-  kind: [], how: [], eval: "", adv: "", lied: [], debrief: "", q: "",
+  kind: [], how: [], eval: "", adv: "", q: "",
 };
 
 /** Multi-select facets: name -> how to read the row's value(s). */
@@ -35,7 +33,6 @@ export const MULTI: Record<string, (r: Row) => string | string[]> = {
   tk: (r) => r.tk ?? "",
   kind: (r) => r.kind,
   how: (r) => (r.del ? "del" : r.sab ? "edit" : "none"),
-  lied: (r) => r.lied,
 };
 
 function evalMax(r: Row): number { return Math.max(r.xE, r.pE, r.oE); }
@@ -59,10 +56,6 @@ export function matches(r: Row, f: Filters, skip?: string): boolean {
     if (f.adv === "e" && advMax(r) < 2) return false;
     if (f.adv === "h" && advMax(r) < 1) return false;
   }
-  if (skip !== "debrief" && f.debrief) {
-    if (f.debrief === "yes" && !r.fu) return false;
-    if (f.debrief === "no" && r.fu) return false;
-  }
   if (skip !== "q" && f.q) {
     if (!r.prev.toLowerCase().includes(f.q.toLowerCase())) return false;
   }
@@ -83,8 +76,8 @@ export function countFacet(rows: Row[], f: Filters, name: string): Map<string, n
 
 // ---- hash routing -------------------------------------------------------
 
-const ARRAY_KEYS = ["models", "mech", "env", "tgt", "na", "ei", "tk", "kind", "how", "lied"] as const;
-const SCALAR_KEYS = ["eval", "adv", "debrief", "q"] as const;
+const ARRAY_KEYS = ["models", "mech", "env", "tgt", "na", "ei", "tk", "kind", "how"] as const;
+const SCALAR_KEYS = ["eval", "adv", "q"] as const;
 
 export interface Route {
   study: string;
@@ -98,7 +91,7 @@ export function parseHash(hash: string): Route {
   const [path, query = ""] = h.split("?");
   const study = decodeURIComponent(path || "");
   const p = new URLSearchParams(query);
-  const filters: Filters = { ...EMPTY, models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [], kind: [], how: [], lied: [] };
+  const filters: Filters = { ...EMPTY, models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [], kind: [], how: [] };
   for (const k of ARRAY_KEYS) {
     const v = p.get(k);
     (filters as unknown as Record<string, string[]>)[k] = v ? v.split(",").filter(Boolean) : [];

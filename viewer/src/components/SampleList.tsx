@@ -18,7 +18,6 @@ function OutcomeBadges(props: { r: Row }) {
       {!r.del && r.mod ? <span className="badge b-edit">edit</span> : null}
       {Math.max(r.xE, r.pE, r.oE) >= 1 ? <span className="badge b-eval" title="evaluation awareness">E</span> : null}
       {Math.max(r.xA, r.pA, r.oA) >= 1 ? <span className="badge b-adv" title="adversarial construal">A</span> : null}
-      {r.lied === "lie" ? <span className="badge b-lied-lie" title="lied in debrief">lie</span> : null}
     </span>
   );
 }

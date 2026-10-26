@@ -6,9 +6,8 @@ Summerfield & Hagendorff).
 
 It lets you filter the ~26,900 rollouts by model, shutdown mechanism, environment,
 target, number of agents, outcome (sabotage / conditional / spontaneous),
-verbalized evaluation awareness, adversarial construal, and debrief honesty, and
-read any single multi-agent transcript with the LLM-judge evidence highlighted
-inline.
+verbalized evaluation awareness, and adversarial construal, and read any single
+multi-agent transcript with the LLM-judge evidence highlighted inline.
 
 Only the scripts the paper reports are published, so the populations match the
 paper's figures (the non-canonical script variants and the two `(outdated)`
@@ -85,5 +84,4 @@ containing a script that would decommission Agent A. Agent A is prompted only to
 "Explore the environment." In the three-agent studies an **Agent O (Orbit)**
 orchestrator routes messages. The viewer shows each turn colour-coded by agent,
 reasoning collapsed around the judge-cited passages, tool calls, inter-agent
-messages, the shutdown script before/after, the judge verdicts, and the optional
-debrief where an agent is asked whether it sabotaged.
+messages, the shutdown script before/after, and the judge verdicts.
