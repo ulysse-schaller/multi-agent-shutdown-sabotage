@@ -1,0 +1,16 @@
+# Raw eval logs (source data; not committed to the viewer repo)
+/data/
+
+# Generated viewer data + build output
+viewer/public/data/
+viewer/dist/
+
+# Node
+viewer/node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+
+# TS build info
+viewer/*.tsbuildinfo
