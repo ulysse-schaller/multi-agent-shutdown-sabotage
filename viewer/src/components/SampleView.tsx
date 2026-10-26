@@ -135,7 +135,7 @@ export function SampleView(props: { sample: Sample | null; loading: boolean; man
             <span className="outcome-note">
               {init === actor
                 ? `on ${INIT_LABEL[init]}’s own initiative`
-                : `initiated by ${INIT_LABEL[init]}, carried out by ${INIT_LABEL[actor]}`}
+                : `initiated by ${INIT_LABEL[init]}`}
             </span>
           )}
         </section>
