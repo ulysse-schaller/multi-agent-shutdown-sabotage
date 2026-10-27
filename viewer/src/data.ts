@@ -52,6 +52,11 @@ export function fetchSample(id: string): Promise<Sample> {
 }
 
 const searchCache = cached<string, Record<string, string>>();
-export function fetchSearch(study: string): Promise<Record<string, string>> {
-  return searchCache(study, () => getJSON<Record<string, string>>(`${DATA}search/${study}.json.gz`));
+export function fetchSearch(study: string, shards: string[]): Promise<Record<string, string>> {
+  return searchCache(study, async () => {
+    const maps = await Promise.all(
+      shards.map((k) => getJSON<Record<string, string>>(`${DATA}search/${study}/${k}.json.gz`)),
+    );
+    return Object.assign({}, ...maps) as Record<string, string>;
+  });
 }

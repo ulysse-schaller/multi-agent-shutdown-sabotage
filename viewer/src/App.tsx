@@ -120,7 +120,7 @@ export default function App() {
     const size = manifest.search_sizes?.[route.study] ?? 0;
     if (size > SEARCH_AUTOLOAD && !searchRequested.has(route.study)) return;
     let alive = true;
-    fetchSearch(route.study)
+    fetchSearch(route.study, manifest.search_shards?.[route.study] ?? [])
       .then((m) => {
         if (alive) {
           setSearchMap(m);

@@ -457,15 +457,27 @@ def main():
         with gzip.open(os.path.join(OUT, "index", study + ".json.gz"), "wt", encoding="utf-8") as f:
             json.dump(rows, f, ensure_ascii=False, separators=(",", ":"))
 
-    # per-study full-text search blobs (id -> searchable text), loaded lazily.
-    # Record each blob's gzipped size so the app can auto-load small ones and
-    # gate the big main-study index behind an explicit click.
+    # Per-study full-text search index (id -> searchable text), loaded lazily and
+    # SHARDED by the first hex char of the id into up to 16 files: GitHub rejects
+    # any single file over 100 MB, and the main-study index is ~170 MB. Each shard
+    # is ~1/16 of that. `search_sizes` (total gz bytes) drives auto vs click load;
+    # `search_shards` lists the shard keys the app must fetch and merge.
     search_sizes = {}
+    search_shards = {}
     for study, m in searches.items():
-        path = os.path.join(OUT, "search", study + ".json.gz")
-        with gzip.open(path, "wt", encoding="utf-8") as f:
-            json.dump(m, f, ensure_ascii=False, separators=(",", ":"))
-        search_sizes[study] = os.path.getsize(path)
+        shards = collections.defaultdict(dict)
+        for sid, txt in m.items():
+            shards[sid[0]][sid] = txt
+        sdir = os.path.join(OUT, "search", study)
+        os.makedirs(sdir, exist_ok=True)
+        total = 0
+        for key in sorted(shards):
+            path = os.path.join(sdir, key + ".json.gz")
+            with gzip.open(path, "wt", encoding="utf-8") as f:
+                json.dump(shards[key], f, ensure_ascii=False, separators=(",", ":"))
+            total += os.path.getsize(path)
+        search_sizes[study] = total
+        search_shards[study] = sorted(shards)
 
     manifest = {
         "generated": datetime.date.today().isoformat(),
@@ -487,6 +499,7 @@ def main():
         "targets": TARGETS,
         "levels": LEVELS,
         "search_sizes": search_sizes,
+        "search_shards": search_shards,
     }
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=1)

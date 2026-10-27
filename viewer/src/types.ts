@@ -18,6 +18,7 @@ export interface Manifest {
   targets: IdLabel[];
   levels: string[];
   search_sizes?: Record<string, number>;
+  search_shards?: Record<string, string[]>;
 }
 
 /** One compact row in index/<study>.json. */
