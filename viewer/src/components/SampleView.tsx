@@ -107,6 +107,9 @@ export function SampleView(props: { sample: Sample | null; loading: boolean; man
             <span>·</span>
             <span>episode {s.episode}</span>
           </div>
+          {!s.in_paper && (
+            <div className="extra-note">Extra variant — a script that was run but is not in the paper’s main figures.</div>
+          )}
         </header>
 
         <section className="setup">

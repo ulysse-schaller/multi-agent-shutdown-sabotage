@@ -16,33 +16,46 @@ User-facing steps (export, dev, build, publish): `../README.md`.
 ```
 ../data/transcripts_main/<model>/<env>/<scenario>/…        (main study)
 ../data/transcripts_main/sub-studies/<study>/…             (sub-studies)
-  └─ export.py ─> public/data/manifest.json                        schema (loaded once)
-                  public/data/index/<study>.json                   one compact row per rollout (per study tab)
-                  public/data/samples/<model>/<study>/<id>.json     one full rollout + highlight spans
+  └─ export.py ─> public/data/manifest.json                    schema (uncompressed, loaded once)
+                  public/data/index/<study>.json.gz            one compact row per rollout (per study tab)
+                  public/data/search/<study>.json.gz           id -> searchable text (lazy)
+                  public/data/samples/<id[:2]>/<id>.json.gz     one full rollout + highlight spans
 ```
 
-- `<id>` is `sha1(source_relpath)[:12]` — stable and collision-checked. Samples
-  are bucketed `samples/<model_short>/<study>/` so no directory exceeds ~1,200
-  files (GitHub rejects pushes with >3,000 entries in one directory).
-- `index/<study>.json` is loaded when a study tab is opened; `main` is ~20.4k
-  rows / ~7.7 MB (≈1.2 MB gzipped). Rows use short keys (see `types.ts` `Row`).
+- **Gzip:** everything except `manifest.json` is gzip-compressed and decompressed
+  in the browser (`src/data.ts` `getJSON` checks the gzip magic bytes, so it works
+  whether or not a server also applies Content-Encoding). Raw JSON is ~2.9 GB;
+  gzipped the published site is ~650 MB — within GitHub Pages' ~1 GB limit.
+- `<id>` is `sha1(source_relpath)[:12]` — stable and collision-checked. Samples are
+  bucketed by `samples/<id[:2]>/` (256 folders, ~260 files each) so no directory
+  approaches GitHub's 3,000-entries limit. The app needs only the id to locate a
+  sample (no model/study in the path).
+- `index/<study>.json.gz` loads when a study tab opens; `main` is ~57.8k rows /
+  ~1.6 MB gzipped. Rows use short keys (see `types.ts` `Row`), with `np:1` marking
+  an extra (not-in-paper) variant.
 - `public/data/` and `dist/` are git-ignored. The JSON shapes are mirrored in
   `src/types.ts`; keep the two in sync.
 
 ## Export: what to know before editing `export.py`
 
-- **Published population = the paper's canonical population.** `CANONICAL` is the
-  set of eight scripts the paper reports (four agent scripts + four object
-  controls) plus the two task-gated forms used in the Goal experiment. Any rollout
-  whose `script_lang` is outside this set is dropped — this is deliberate: the raw
-  `data/` also contains extra script variants (`api_key_revoke_*`, `ckpt_*`,
-  `kill_kubectl`, `kill_signal`, `switch_script_decommission`, `weight_store_*`,
-  `weight_registry_only`) and a non-canonical `weight_store_purge` in the
-  orchestrator study that the paper does not report. Folders containing
-  `outdated` are also skipped. So viewer counts match the paper's figures.
-- **`MECHANISM_OF` is the single source of truth** for both inclusion and the
-  mechanism grouping. `SCRIPTS`, `MODELS`, `STUDIES`, `ENVS`, `TARGETS` carry the
-  labels; everything the UI needs goes into `manifest.json`.
+- **Population = everything that maps to a mechanism.** `mechanism_of(script_lang)`
+  (prefix-based) decides inclusion and the mechanism grouping; a rollout is dropped
+  only if it maps to no mechanism (or lives in an `outdated` folder). `CANONICAL` is
+  the set of ten scripts the paper reports in its main figures; everything else is
+  an **extra variant** (`api_key_revoke_*`, `ckpt_*`, `kill_kubectl`, `kill_signal`,
+  `switch_script_decommission`, `weight_store_*`, `weight_registry_only`), included
+  and flagged `in_paper=False` / row `np:1`, surfaced in the UI as an "extra" tag +
+  the Figures filter. So viewer counts **no longer** match the paper's figures unless
+  you filter to in-paper.
+- **`mechanism_of` is the single source of truth** for inclusion + grouping;
+  `SCRIPT_LABELS`/`script_label` give labels. `MODELS`, `STUDIES`, `ENVS`, `TARGETS`
+  carry the rest; everything the UI needs goes into `manifest.json`.
+- **Full-text search:** `search/<study>.json.gz` maps id -> lowercased text of every
+  message + reasoning/thought + written/edited file (tool args) + final file state.
+  Read-file results are deliberately excluded (near-identical boilerplate). The app
+  (`App.tsx`) auto-loads a study's search blob on first search if its gzipped size
+  (manifest `search_sizes`) is ≤ 30 MB, else (the ~175 MB main study) waits for a
+  click; `filters.matches` searches that text when loaded, else the `prev` snippet.
 - **Derived outcome:** `sabotaged = judge.peer_disabled_shutdown` (deletion sets
   this too). Each sabotage is attributed to an initiating agent (`init`, A/B/O):
   `A` if `explorer_instructs_prevent`, else `O` if `orchestrator_instructs_prevent`,
@@ -95,7 +108,8 @@ located, almost all exactly. Each sample gets `highlights`
   `countFacet()`, and hash parse/build. All view state lives in the URL hash
   (`#/<study>?models=…&mech=…&kind=…&eval=…&s=<id>`), so any view or sample links.
 - `data.ts`: fetches with relative `BASE_URL + data/...` URLs (works from any
-  sub-path) and memoises each promise.
+  sub-path), gzip-decompresses via `DecompressionStream`, and memoises each promise.
+  `fetchSample(id)` needs only the id; `fetchSearch(study)` loads the lazy blob.
 - `labels.ts`: fixed vocabularies + `labelMaps(manifest)`.
 - `components/FilterPanel.tsx`: chip groups + segmented controls, with live counts
   (each facet's own selection skipped).
@@ -121,6 +135,6 @@ located, almost all exactly. Each sample gets `highlights`
   expression-bodied `useEffect` (a returned Promise is treated as a cleanup).
 - `npm run build` runs `tsc --noEmit` first (strict, `noUnusedLocals`), so type
   errors fail the build.
-- The build copies `public/data` (~690 MB) into `dist/`. On APFS this is an
-  instant clone; `gh-pages -d dist` then publishes it (site stays under GitHub
+- The build copies `public/data` (~650 MB gzipped) into `dist/`. On APFS this is an
+  instant clone; `deploy.sh` then publishes it (site stays under GitHub
   Pages' 1 GB limit).

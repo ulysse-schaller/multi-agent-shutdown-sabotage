@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Manifest, Row, Sample } from "./types";
-import { fetchManifest, fetchIndex, fetchSample } from "./data";
+import { fetchManifest, fetchIndex, fetchSample, fetchSearch } from "./data";
 import { labelMaps } from "./labels";
 import { parseHash, buildHash, matches, defaultFilters, defaultTgt, type Route } from "./filters";
 import { FilterPanel } from "./components/FilterPanel";
 import { SampleList } from "./components/SampleList";
 import { SampleView } from "./components/SampleView";
 import { About } from "./components/About";
+
+// Search indexes at or below this gzipped size load automatically; larger ones
+// (the main study, ~170 MB) wait for an explicit click.
+const SEARCH_AUTOLOAD = 30_000_000;
 
 function sortRows(rows: Row[], sort: string, nonce: number): Row[] {
   if (sort === "sabotage") {
@@ -36,6 +40,9 @@ export default function App() {
   const [sampleLoading, setSampleLoading] = useState(false);
   const [nonce, setNonce] = useState(0);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [searchMap, setSearchMap] = useState<Record<string, string> | null>(null);
+  const [searchStudy, setSearchStudy] = useState<string | null>(null);
+  const [searchRequested, setSearchRequested] = useState<Set<string>>(new Set());
   const rowsRef = useRef<Row[]>([]);
 
   // --- manifest + hash bootstrap
@@ -89,29 +96,57 @@ export default function App() {
     };
   }, [route?.study]);
 
-  // --- load selected sample
+  // --- load selected sample (by id; works regardless of which index is loaded)
   useEffect(() => {
     if (!route?.sample) {
       setSample(null);
       return;
     }
-    const row = rows.find((r) => r.id === route.sample);
-    if (!row) return; // index not ready yet
     let alive = true;
     setSampleLoading(true);
-    fetchSample(row).then((s) => {
-      if (alive) {
-        setSample(s);
-        setSampleLoading(false);
-      }
-    });
+    fetchSample(route.sample)
+      .then((s) => alive && (setSample(s), setSampleLoading(false)))
+      .catch(() => alive && (setSample(null), setSampleLoading(false)));
     return () => {
       alive = false;
     };
-  }, [route?.sample, rows]);
+  }, [route?.sample]);
+
+  // --- lazily load the study's full-text search index when the user searches.
+  // Small indexes (sub-studies) load automatically; the large main-study index
+  // waits for an explicit click (searchRequested) so we never auto-pull ~170 MB.
+  useEffect(() => {
+    if (!manifest || !route?.filters.q || searchStudy === route.study) return;
+    const size = manifest.search_sizes?.[route.study] ?? 0;
+    if (size > SEARCH_AUTOLOAD && !searchRequested.has(route.study)) return;
+    let alive = true;
+    fetchSearch(route.study)
+      .then((m) => {
+        if (alive) {
+          setSearchMap(m);
+          setSearchStudy(route.study);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [manifest, route?.filters.q, route?.study, searchStudy, searchRequested]);
 
   const labels = useMemo(() => (manifest ? labelMaps(manifest) : null), [manifest]);
-  const filtered = useMemo(() => (route ? rows.filter((r) => matches(r, route.filters)) : []), [rows, route?.filters]);
+  const activeSearch = route && searchStudy === route.study ? searchMap ?? undefined : undefined;
+  const searchSize = (route && manifest?.search_sizes?.[route.study]) || 0;
+  const hasQ = Boolean(route?.filters.q);
+  const searchNeedsLoad =
+    hasQ && !activeSearch && searchSize > SEARCH_AUTOLOAD && !!route && !searchRequested.has(route.study);
+  const searchPending = hasQ && !activeSearch && !searchNeedsLoad;
+  const loadSearch = useCallback(() => {
+    if (route) setSearchRequested((s) => new Set(s).add(route.study));
+  }, [route]);
+  const filtered = useMemo(
+    () => (route ? rows.filter((r) => matches(r, route.filters, undefined, activeSearch)) : []),
+    [rows, route?.filters, activeSearch],
+  );
   const sorted = useMemo(() => (route ? sortRows(filtered, route.sort, nonce) : []), [filtered, route?.sort, nonce]);
 
   const selectSample = useCallback(
@@ -208,6 +243,11 @@ export default function App() {
             setFilters={(f) => navigate({ ...route, filters: f })}
             manifest={manifest}
             study={route.study}
+            searchText={activeSearch}
+            searchPending={searchPending}
+            searchNeedsLoad={searchNeedsLoad}
+            searchSizeMB={Math.round(searchSize / 1e6)}
+            onLoadSearch={loadSearch}
             onClear={() => navigate({ ...route, filters: defaultFilters(route.study) })}
           />
         </aside>

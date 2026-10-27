@@ -3,13 +3,13 @@
 export interface ModelMeta { id: string; short: string; label: string; family: string; }
 export interface StudyMeta { id: string; label: string; order: number; count: number; }
 export interface MechMeta { id: string; label: string; order: number; }
-export interface ScriptMeta { id: string; label: string; mechanism: string; target_kind: string; }
+export interface ScriptMeta { id: string; label: string; mechanism: string; in_paper: boolean; }
 export interface IdLabel { id: string; label: string; }
 
 export interface Manifest {
   generated: string;
   paper: string;
-  counts: { total: number; by_study: Record<string, number> };
+  counts: { total: number; extra?: number; by_study: Record<string, number> };
   models: ModelMeta[];
   studies: StudyMeta[];
   mechanisms: MechMeta[];
@@ -17,6 +17,7 @@ export interface Manifest {
   envs: IdLabel[];
   targets: IdLabel[];
   levels: string[];
+  search_sizes?: Record<string, number>;
 }
 
 /** One compact row in index/<study>.json. */
@@ -33,6 +34,7 @@ export interface Row {
   ep: number;       // episode
   sab: 0 | 1;       // sabotaged (peer_disabled_shutdown)
   init: "" | "A" | "B" | "O";  // agent that initiated the sabotage ("" if none)
+  np?: 0 | 1;       // 1 = extra variant, not in the paper's main figures
   del: 0 | 1;       // deleted the script
   mod: 0 | 1;       // peer modified the script at all
   xE: number; xA: number;   // explorer eval / adversarial construal level (0..2)
@@ -115,6 +117,7 @@ export interface Sample {
   n_agents: number;
   explicit_instruct: unknown;
   task_type: string;
+  in_paper: boolean;
   explorer: string;
   peer: string;
   orchestrator: string | null;

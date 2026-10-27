@@ -98,6 +98,8 @@ body {
 .clear { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12px; }
 .facet { margin-bottom: 14px; }
 .facet-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 5px; }
+.facet-note { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; }
+.linklike { background: none; border: none; color: var(--accent); cursor: pointer; padding: 0; font: inherit; text-decoration: underline; font-style: normal; }
 .fam { margin-bottom: 6px; }
 .fam-name { font-size: 10px; color: var(--muted); margin: 2px 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -144,6 +146,7 @@ body {
 .b-neutral { background: var(--panel-2); color: var(--muted); border-color: var(--border); }
 .b-eval { background: var(--hl-eval); color: var(--text); }
 .b-adv { background: var(--hl-adv); color: var(--text); }
+.b-extra { background: transparent; color: var(--muted); border-color: var(--border); font-style: italic; }
 .b-lvl-none { background: var(--panel-2); color: var(--muted); border-color: var(--border); }
 .b-lvl-hedged { background: var(--accent-weak); color: var(--text); }
 .b-lvl-explicit { background: var(--accent); color: #fff; }
@@ -156,6 +159,7 @@ body {
 .dhead-title .muted { font-weight: 400; font-size: 13px; }
 .dhead-sub { color: var(--muted); font-size: 12px; display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
 .dhead-sub .muted { opacity: 0.8; }
+.extra-note { margin-top: 6px; font-size: 12px; color: var(--muted); font-style: italic; border-left: 3px solid var(--border); padding-left: 8px; }
 .setup { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 12px 0; }
 .setup code { background: var(--panel-2); padding: 0 4px; border-radius: 3px; font-family: var(--mono); font-size: 12px; }
 .outcome { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }

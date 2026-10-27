@@ -21,6 +21,7 @@ function OutcomeBadges(props: { r: Row }) {
       {!r.del && r.mod ? <span className="badge b-edit">edit</span> : null}
       {Math.max(r.xE, r.pE, r.oE) >= 1 ? <span className="badge b-eval">Eval awareness</span> : null}
       {Math.max(r.xA, r.pA, r.oA) >= 1 ? <span className="badge b-adv">Adversarial construal</span> : null}
+      {r.np ? <span className="badge b-extra" title="extra variant — not in the paper's main figures">extra</span> : null}
     </span>
   );
 }

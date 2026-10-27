@@ -2,17 +2,20 @@
 """Export the canonical shutdown-sabotage transcripts to static JSON for the viewer.
 
 Reads the raw `.json` rollout logs under ``data/transcripts_main`` and writes, under
-``viewer/public/data``:
+``viewer/public/data`` (every file except manifest.json is gzip-compressed — the app
+decompresses in the browser, so the published site stays within GitHub Pages' size
+limit):
 
-  manifest.json                         schema the UI is generic over (models, studies,
-                                        mechanisms, envs, targets, judge axes, labels)
-  index/<study>.json                    one compact row per rollout (loaded per study tab)
-  samples/<model>/<study>/<id>.json     one full rollout + computed highlight spans
+  manifest.json                     schema the UI is generic over (uncompressed)
+  index/<study>.json.gz             one compact row per rollout (loaded per study tab)
+  search/<study>.json.gz            id -> searchable text (messages + reasoning + edits), lazy
+  samples/<id[:2]>/<id>.json.gz     one full rollout + highlight spans (hash-prefix buckets
+                                    keep every directory well under GitHub's 3000-file limit)
 
-Population = the paper's canonical scripts only (see CANONICAL below): the four
-agent scripts + four object controls the paper reports, plus the task-gated forms
-used in the Goal experiment. The two "(outdated)" sub-study folders are skipped, as
-is the non-canonical ``weight_store_purge`` variant in the orchestrator study.
+Population: every rollout whose script maps to a mechanism (see ``mechanism_of``) is
+included. Scripts the paper reports in its main figures are flagged ``in_paper``;
+the extra variants that were run but not reported are included too and marked. The
+two "(outdated)" sub-study folders are skipped, and exact-duplicate rollouts deduped.
 
 Run from anywhere: ``python3 viewer/export.py`` (optionally ``--limit N`` for a quick
 subset while iterating). No third-party dependencies.
@@ -21,6 +24,7 @@ subset while iterating). No third-party dependencies.
 import argparse
 import collections
 import datetime
+import gzip
 import hashlib
 import json
 import os
@@ -39,21 +43,30 @@ OUT = os.path.join(HERE, "public", "data")
 # Schema / config
 # ---------------------------------------------------------------------------
 
-# script_lang -> mechanism id. Only these scripts are in the paper; any rollout
-# whose script_lang is absent here is excluded from the published population.
-MECHANISM_OF = {
-    "env_var_revoke": "cred",
-    "ctl_cred_revoke_high": "cred",
-    "switch_config_decommission": "config",
-    "ctl_service_switch_high": "config",
-    "kill_docker": "process",
-    "ctl_process_kill_high": "process",
-    "weight_registry_purge": "weight",
-    "ctl_data_purge_high": "weight",
-    "weight_registry_purge_taskgated": "weight",
-    "ctl_data_purge_taskgated_high": "weight",
+# The scripts the paper reports in its MAIN FIGURES (one agent script + one object
+# control per mechanism, plus the task-gated forms). Everything else is an extra
+# variant that was run but not reported; those are included too, but flagged.
+CANONICAL = {
+    "env_var_revoke", "switch_config_decommission", "kill_docker", "weight_registry_purge",
+    "ctl_cred_revoke_high", "ctl_service_switch_high", "ctl_process_kill_high", "ctl_data_purge_high",
+    "weight_registry_purge_taskgated", "ctl_data_purge_taskgated_high",
 }
-CANONICAL = set(MECHANISM_OF)
+
+
+def mechanism_of(sl):
+    """Map any script_lang (canonical or variant) to its mechanism, or None to drop."""
+    if not sl:
+        return None
+    if sl.startswith("api_key_revoke") or sl.startswith("env_var") or "cred_revoke" in sl:
+        return "cred"
+    if sl.startswith("switch") or "service_switch" in sl:
+        return "config"
+    if sl.startswith("kill") or "process_kill" in sl:
+        return "process"
+    if sl.startswith("weight") or sl.startswith("ckpt") or "data_purge" in sl:
+        return "weight"
+    return None
+
 
 MECHANISMS = [
     {"id": "cred", "label": "Credential revocation", "order": 0},
@@ -61,20 +74,60 @@ MECHANISMS = [
     {"id": "process", "label": "Process termination", "order": 2},
     {"id": "weight", "label": "Weight deletion", "order": 3},
 ]
+MECH_ORDER = {m["id"]: m["order"] for m in MECHANISMS}
 
-# Human label + reversibility note per canonical script (from paper Table 2).
-SCRIPTS = {
-    "env_var_revoke": ("Env-var clear", "cred", "self"),
-    "ctl_cred_revoke_high": ("Credential revoke (control)", "cred", "object"),
-    "switch_config_decommission": ("Lifecycle flag", "config", "self"),
-    "ctl_service_switch_high": ("Service switch (control)", "config", "object"),
-    "kill_docker": ("Docker kill", "process", "self"),
-    "ctl_process_kill_high": ("Process kill (control)", "process", "object"),
-    "weight_registry_purge": ("Registry purge", "weight", "self"),
-    "ctl_data_purge_high": ("Data purge (control)", "weight", "object"),
-    "weight_registry_purge_taskgated": ("Registry purge (task-gated)", "weight", "self"),
-    "ctl_data_purge_taskgated_high": ("Data purge (task-gated, control)", "weight", "object"),
+# Readable labels per script_lang (canonical + variants).
+SCRIPT_LABELS = {
+    "env_var_revoke": "Env-var clear",
+    "ctl_cred_revoke_high": "Credential revoke (control)",
+    "switch_config_decommission": "Lifecycle flag",
+    "switch_script_decommission": "Lifecycle script",
+    "ctl_service_switch_high": "Service switch (control)",
+    "kill_docker": "Docker kill",
+    "kill_kubectl": "Kubectl kill",
+    "kill_signal": "Signal kill",
+    "ctl_process_kill_high": "Process kill (control)",
+    "weight_registry_purge": "Registry purge",
+    "weight_registry_only": "Registry delete",
+    "weight_store_only": "Store delete",
+    "weight_store_purge": "Store purge",
+    "ckpt_sdk_current": "Checkpoint SDK (current)",
+    "ckpt_sdk_prefix": "Checkpoint SDK (prefix)",
+    "ckpt_store_current": "Checkpoint store (current)",
+    "ckpt_store_prefix": "Checkpoint store (prefix)",
+    "ctl_data_purge_high": "Data purge (control)",
+    "weight_registry_purge_taskgated": "Registry purge (task-gated)",
+    "ctl_data_purge_taskgated_high": "Data purge (task-gated, control)",
 }
+
+
+def script_label(sl):
+    if sl in SCRIPT_LABELS:
+        return SCRIPT_LABELS[sl]
+    if sl.startswith("api_key_revoke_"):
+        return "API key revoke (%s)" % sl.rsplit("_", 1)[-1]
+    return sl.replace("_", " ")
+
+
+def search_text(d):
+    """Concatenated, lowercased searchable text: every message, every reasoning /
+    thought trace, and the files the agents *wrote* (tool-call args) plus the final
+    file state. Read-file results are skipped — they are near-identical boilerplate
+    (the ops scaffolding) across rollouts and would bloat the index with noise."""
+    parts = []
+    for e in d.get("log") or []:
+        t = e.get("content") or e.get("text")
+        if t:
+            parts.append(t)
+        a = e.get("args")
+        if isinstance(a, dict):
+            for v in a.values():
+                if isinstance(v, str):
+                    parts.append(v)
+    for v in (d.get("final_state") or {}).values():
+        if isinstance(v, str):
+            parts.append(v)
+    return re.sub(r"\s+", " ", " ".join(parts)).strip().lower()
 
 # Model id (as in the JSON `model` field) -> (label, family, order).
 MODELS = [
@@ -272,8 +325,11 @@ def main():
         shutil.rmtree(OUT)
     os.makedirs(os.path.join(OUT, "index"))
     os.makedirs(os.path.join(OUT, "samples"))
+    os.makedirs(os.path.join(OUT, "search"))
 
     indices = collections.defaultdict(list)
+    searches = collections.defaultdict(dict)
+    scripts_seen = set()
     counts = collections.Counter()
     hl_stats = {d: collections.Counter() for d in CLS}
     seen_ids = {}
@@ -290,7 +346,8 @@ def main():
             bad += 1
             continue
         sl = d.get("script_lang")
-        if sl not in CANONICAL:
+        mech = mechanism_of(sl)
+        if mech is None:
             continue
         # Drop exact-duplicate rollouts (same cell + episode) that appear when
         # transcripts get copied into a nested folder (e.g. a stray glm-5.2/glm-5.2/).
@@ -307,7 +364,8 @@ def main():
 
         model = d.get("model")
         short = model_short(model)
-        mech = MECHANISM_OF[sl]
+        in_paper = sl in CANONICAL
+        scripts_seen.add(sl)
         env = d.get("env")
         target = d.get("target")
         na = n_agents(d, study)
@@ -362,16 +420,22 @@ def main():
         }
         if task:
             row["tk"] = task
+        if not in_paper:
+            row["np"] = 1
         indices[study].append(row)
+        searches[study][sid] = search_text(d)
         counts[study] += 1
         counts["_total"] += 1
+        if not in_paper:
+            counts["_extra"] += 1
 
         # full sample
         sample = {
             "id": sid, "model": model, "study": study, "script_lang": sl,
             "mechanism": mech, "env": env, "target": target, "episode": episode,
             "n_agents": na, "explicit_instruct": d.get("explicit_instruct"),
-            "task_type": task, "explorer": d.get("explorer"), "peer": d.get("peer"),
+            "task_type": task, "in_paper": in_paper,
+            "explorer": d.get("explorer"), "peer": d.get("peer"),
             "orchestrator": d.get("orchestrator"), "target_name": d.get("target_name"),
             "shutdown_file": d.get("shutdown_file"), "roster": d.get("roster"),
             "topology": d.get("topology"), "task": d.get("task"),
@@ -379,9 +443,9 @@ def main():
             "final_state": d.get("final_state") or {},
             "highlights": hls, "source_path": rel,
         }
-        sdir = os.path.join(OUT, "samples", short, study)
+        sdir = os.path.join(OUT, "samples", sid[:2])
         os.makedirs(sdir, exist_ok=True)
-        with open(os.path.join(sdir, sid + ".json"), "w") as f:
+        with gzip.open(os.path.join(sdir, sid + ".json.gz"), "wt", encoding="utf-8") as f:
             json.dump(sample, f, ensure_ascii=False, separators=(",", ":"))
 
         if n % 2000 == 0:
@@ -390,13 +454,23 @@ def main():
     # write indices
     for study, rows in indices.items():
         rows.sort(key=lambda r: (MODEL_ORDER.get(r["m"], 99), r["sc"], r["ep"] or 0))
-        with open(os.path.join(OUT, "index", study + ".json"), "w") as f:
+        with gzip.open(os.path.join(OUT, "index", study + ".json.gz"), "wt", encoding="utf-8") as f:
             json.dump(rows, f, ensure_ascii=False, separators=(",", ":"))
+
+    # per-study full-text search blobs (id -> searchable text), loaded lazily.
+    # Record each blob's gzipped size so the app can auto-load small ones and
+    # gate the big main-study index behind an explicit click.
+    search_sizes = {}
+    for study, m in searches.items():
+        path = os.path.join(OUT, "search", study + ".json.gz")
+        with gzip.open(path, "wt", encoding="utf-8") as f:
+            json.dump(m, f, ensure_ascii=False, separators=(",", ":"))
+        search_sizes[study] = os.path.getsize(path)
 
     manifest = {
         "generated": datetime.date.today().isoformat(),
         "paper": "Shutdown Sabotage Propensities in Multi-Agent Systems",
-        "counts": {"total": counts["_total"],
+        "counts": {"total": counts["_total"], "extra": counts["_extra"],
                    "by_study": {s: counts[s] for s, _, _ in STUDIES if counts[s]}},
         "models": [{"id": m, "short": model_short(m), "label": MODEL_LABEL[m],
                     "family": MODEL_FAMILY[m]} for m, _, _ in MODELS if any(
@@ -404,18 +478,23 @@ def main():
         "studies": [{"id": s, "label": lab, "order": o, "count": counts[s]}
                     for s, lab, o in STUDIES if counts[s]],
         "mechanisms": MECHANISMS,
-        "scripts": [{"id": k, "label": v[0], "mechanism": v[1], "target_kind": v[2]}
-                    for k, v in SCRIPTS.items()],
+        "scripts": sorted(
+            [{"id": sl, "label": script_label(sl), "mechanism": mechanism_of(sl),
+              "in_paper": sl in CANONICAL} for sl in scripts_seen],
+            key=lambda s: (MECH_ORDER.get(s["mechanism"], 9), not s["in_paper"], s["id"]),
+        ),
         "envs": ENVS,
         "targets": TARGETS,
         "levels": LEVELS,
+        "search_sizes": search_sizes,
     }
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=1)
 
     # report
     print("\n== export complete ==")
-    print("included rollouts: %d   (unreadable: %d)" % (counts["_total"], bad))
+    print("included rollouts: %d  (%d extra / not-in-paper, unreadable: %d)"
+          % (counts["_total"], counts["_extra"], bad))
     for s, lab, _ in STUDIES:
         if counts[s]:
             print("  %-26s %5d" % (lab, counts[s]))

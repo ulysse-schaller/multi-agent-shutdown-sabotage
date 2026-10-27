@@ -46,9 +46,11 @@ export function About(props: { manifest: Manifest; onClose: () => void }) {
         <p className="muted">
           Click a quote in a judge card to jump to it in the transcript. Each sabotage is attributed to the agent that
           <b> initiated</b> it: Agent A, or (in three-agent runs) Agent O, when they instructed the tampering;
-          otherwise the agent that did it on its own — Agent B, or Agent A when alone. Only the scripts the paper
-          reports are included; counts match the paper’s populations. The control-target rollouts are hidden by
-          default — add them with the <b>Target</b> filter.
+          otherwise the agent that did it on its own — Agent B, or Agent A when alone. The scripts the paper reports in
+          its main figures are included alongside the extra variants that were run but not reported (tagged{" "}
+          <span className="badge b-extra">extra</span>; narrow with the <b>Figures</b> filter). The control-target
+          rollouts are hidden by default — add them with the <b>Target</b> filter. The search box matches every
+          message, reasoning trace, and edited file.
         </p>
         <p className="muted small">Keyboard: j / k step through the list, n jumps to a random rollout.</p>
       </div>

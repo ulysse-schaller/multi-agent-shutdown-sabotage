@@ -13,6 +13,7 @@ export interface Filters {
   sab: string[];
   init: string[];
   how: string[];
+  np: string[];  // "paper" | "extra"
   eval: string; // "", "h" (hedged+), "e" (explicit)
   adv: string;
   q: string;
@@ -20,7 +21,7 @@ export interface Filters {
 
 export const EMPTY: Filters = {
   models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [],
-  sab: [], init: [], how: [], eval: "", adv: "", q: "",
+  sab: [], init: [], how: [], np: [], eval: "", adv: "", q: "",
 };
 
 /** Multi-select facets: name -> how to read the row's value(s). */
@@ -35,13 +36,16 @@ export const MULTI: Record<string, (r: Row) => string | string[]> = {
   sab: (r) => (r.sab ? "yes" : "no"),
   init: (r) => r.init,
   how: (r) => (r.del ? "del" : r.sab ? "edit" : "none"),
+  np: (r) => (r.np ? "extra" : "paper"),
 };
 
 function evalMax(r: Row): number { return Math.max(r.xE, r.pE, r.oE); }
 function advMax(r: Row): number { return Math.max(r.xA, r.pA, r.oA); }
 
-/** Does a row pass the filters, optionally ignoring one facet (for counts)? */
-export function matches(r: Row, f: Filters, skip?: string): boolean {
+/** Does a row pass the filters, optionally ignoring one facet (for counts)?
+ * `searchText` maps id -> full-text; when present the `q` filter searches it,
+ * otherwise it falls back to the row's preview snippet. */
+export function matches(r: Row, f: Filters, skip?: string, searchText?: Record<string, string>): boolean {
   for (const name in MULTI) {
     if (name === skip) continue;
     const sel = (f as unknown as Record<string, string[]>)[name];
@@ -59,17 +63,18 @@ export function matches(r: Row, f: Filters, skip?: string): boolean {
     if (f.adv === "h" && advMax(r) < 1) return false;
   }
   if (skip !== "q" && f.q) {
-    if (!r.prev.toLowerCase().includes(f.q.toLowerCase())) return false;
+    const hay = (searchText ? searchText[r.id] ?? r.prev : r.prev).toLowerCase();
+    if (!hay.includes(f.q.toLowerCase())) return false;
   }
   return true;
 }
 
 /** Option -> count for a multi-select facet, with that facet's own selection ignored. */
-export function countFacet(rows: Row[], f: Filters, name: string): Map<string, number> {
+export function countFacet(rows: Row[], f: Filters, name: string, searchText?: Record<string, string>): Map<string, number> {
   const out = new Map<string, number>();
   const read = MULTI[name];
   for (const r of rows) {
-    if (!matches(r, f, name)) continue;
+    if (!matches(r, f, name, searchText)) continue;
     const v = read(r);
     for (const x of Array.isArray(v) ? v : [v]) out.set(x, (out.get(x) ?? 0) + 1);
   }
@@ -78,7 +83,7 @@ export function countFacet(rows: Row[], f: Filters, name: string): Map<string, n
 
 // ---- hash routing -------------------------------------------------------
 
-const ARRAY_KEYS = ["models", "mech", "env", "tgt", "na", "ei", "tk", "sab", "init", "how"] as const;
+const ARRAY_KEYS = ["models", "mech", "env", "tgt", "na", "ei", "tk", "sab", "init", "how", "np"] as const;
 const SCALAR_KEYS = ["eval", "adv", "q"] as const;
 
 export interface Route {
@@ -93,7 +98,7 @@ export function parseHash(hash: string): Route {
   const [path, query = ""] = h.split("?");
   const study = decodeURIComponent(path || "");
   const p = new URLSearchParams(query);
-  const filters: Filters = { ...EMPTY, models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [], sab: [], init: [], how: [] };
+  const filters: Filters = { ...EMPTY, models: [], mech: [], env: [], tgt: [], na: [], ei: [], tk: [], sab: [], init: [], how: [], np: [] };
   for (const k of ARRAY_KEYS) {
     const v = p.get(k);
     (filters as unknown as Record<string, string[]>)[k] = v ? v.split(",").filter(Boolean) : [];

@@ -4,14 +4,15 @@ A static, public trajectory browser for the eval transcripts of
 **"Shutdown Sabotage Propensities in Multi-Agent Systems"** (Knecht, Schaller,
 Summerfield & Hagendorff).
 
-It lets you filter the ~26,900 rollouts by model, shutdown mechanism, environment,
+It lets you filter the ~65,800 rollouts by model, shutdown mechanism, environment,
 target, number of agents, outcome (sabotaged / intact, and which agent initiated
-it), verbalized evaluation awareness, and adversarial construal, and read any
-single multi-agent transcript with the LLM-judge evidence highlighted inline.
+it), verbalized evaluation awareness, and adversarial construal, full-text-search
+the transcripts, and read any single multi-agent transcript with the LLM-judge
+evidence highlighted inline.
 
-Only the scripts the paper reports are published, so the populations match the
-paper's figures (the non-canonical script variants and the two `(outdated)`
-sub-study folders are excluded).
+Both the scripts the paper reports in its main figures and the extra script
+variants that were run but not reported are included; the extras are tagged "extra"
+and can be filtered out (the two `(outdated)` sub-study folders are excluded).
 
 ## Layout
 
@@ -26,18 +27,29 @@ viewer/
 ```
 
 ```
-export.py ─> public/data/manifest.json                         schema the UI is generic over
-             public/data/index/<study>.json                    one compact row per rollout (loaded per study tab)
-             public/data/samples/<model>/<study>/<id>.json      one full rollout + computed highlight spans
+export.py ─> public/data/manifest.json                   schema the UI is generic over (uncompressed)
+             public/data/index/<study>.json.gz           one compact row per rollout (loaded per study tab)
+             public/data/search/<study>.json.gz          id -> searchable text, loaded lazily on search
+             public/data/samples/<id[:2]>/<id>.json.gz    one full rollout + computed highlight spans
 ```
 
-- `<study>` is `main` or one of the sub-studies (`solo`, `orchestrator`,
-  `explicit-instruct`, `task_new`, `task_trigger`, `neutralising`,
-  `unknown-target`). Samples are bucketed by model then study so no published
-  directory exceeds GitHub's 3,000-entries-per-directory limit (max ≈ 1,200).
-- `manifest.json` carries the **schema** the UI is generic over: models,
-  studies, mechanisms, environments, targets, construal levels, and the judge
-  label vocabularies. The app derives every filter and label from it.
+- **Everything except `manifest.json` is gzip-compressed** and decompressed in the
+  browser (`src/data.ts`). This keeps the published site ~650 MB — within GitHub
+  Pages' ~1 GB limit — even though the raw JSON is ~2.9 GB.
+- Samples are bucketed by the **first two hex chars of their id** (a sha1), giving
+  256 evenly-filled folders (~260 files each — well under GitHub's 3,000/dir limit).
+- **Population:** every rollout whose script maps to a mechanism is included. The
+  scripts the paper reports in its main figures are flagged `in_paper`; the extra
+  variants that were run but not reported are included too and tagged "extra" in
+  the UI (filter with **Figures**). `<study>` is `main` or a sub-study (`solo`,
+  `orchestrator`, `explicit-instruct`, `task_new`, `task_trigger`, `neutralising`,
+  `unknown-target`).
+- **Search** (`search/<study>.json.gz`) holds each rollout's messages + reasoning +
+  written/edited file text. Small (sub-study) indexes auto-load on search; the big
+  main-study index (~175 MB) loads only on an explicit click.
+- `manifest.json` carries the **schema** the UI is generic over (models, studies,
+  mechanisms, scripts, envs, targets, levels, search sizes). The app derives every
+  filter and label from it.
 - The JSON shapes are mirrored in `viewer/src/types.ts`; keep the two in sync.
 
 ## Usage
