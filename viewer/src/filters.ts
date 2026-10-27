@@ -143,7 +143,9 @@ export function defaultTgt(study: string): string[] {
 }
 
 export function defaultFilters(study: string): Filters {
-  return { ...EMPTY, tgt: defaultTgt(study) };
+  // Default view: the agent target (control hidden) and the paper's main-figure
+  // scripts only (extra variants hidden until the user opts in via Figures).
+  return { ...EMPTY, tgt: defaultTgt(study), np: ["paper"] };
 }
 
 export function isDefault(f: Filters, study: string): boolean {

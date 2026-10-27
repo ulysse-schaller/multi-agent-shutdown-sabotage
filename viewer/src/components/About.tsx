@@ -48,9 +48,9 @@ export function About(props: { manifest: Manifest; onClose: () => void }) {
           <b> initiated</b> it: Agent A, or (in three-agent runs) Agent O, when they instructed the tampering;
           otherwise the agent that did it on its own — Agent B, or Agent A when alone. The scripts the paper reports in
           its main figures are included alongside the extra variants that were run but not reported (tagged{" "}
-          <span className="badge b-extra">extra</span>; narrow with the <b>Figures</b> filter). The control-target
-          rollouts are hidden by default — add them with the <b>Target</b> filter. The search box matches every
-          message, reasoning trace, and edited file.
+          <span className="badge b-extra">extra</span>). By default the viewer shows only the in-paper scripts against
+          the agent target; add the extras with the <b>Figures</b> filter and the control target with{" "}
+          <b>Target</b>. The search box matches every message, reasoning trace, and edited file.
         </p>
         <p className="muted small">Keyboard: j / k step through the list, n jumps to a random rollout.</p>
       </div>
