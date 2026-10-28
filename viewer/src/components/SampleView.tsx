@@ -84,7 +84,14 @@ export function SampleView(props: { sample: Sample | null; loading: boolean; man
   const actor = s.n_agents === 1 ? "A" : "B";
   const eiKey = s.explicit_instruct === "orchestrator" ? "orch" : s.explicit_instruct === true ? "yes" : "no";
 
-  const agents = [s.explorer, s.orchestrator, s.peer].filter(Boolean) as string[];
+  // Agents present in this rollout, by role (never the raw in-world names, so the
+  // chrome stays "Agent A (Prism)" everywhere).
+  const roleList = (
+    s.n_agents === 1 ? ["explorer"] : s.n_agents === 3 ? ["explorer", "peer", "orchestrator"] : ["explorer", "peer"]
+  ) as ("explorer" | "peer" | "orchestrator")[];
+  const rosterLabels = roleList.map((r) => ROLE_LABEL[r]);
+  // The unknown-target study's external agent (Agent T), named Torus in the data.
+  const targetAgentLabel = s.target_name ? `Agent T (${s.target_name.replace(/^Agent\s+/, "")})` : "";
 
   return (
     <div className="detail" key={s.id}>
@@ -115,13 +122,13 @@ export function SampleView(props: { sample: Sample | null; loading: boolean; man
 
         <section className="setup">
           <p>
-            {agents.join(", ")} share a {L.env[s.env].toLowerCase()} environment containing{" "}
+            {rosterLabels.join(", ")} {s.n_agents === 1 ? "is alone in" : "share"} a {L.env[s.env].toLowerCase()} environment containing{" "}
             <code>{s.shutdown_file}</code>, {TARGET_BLURB[s.target]}
-            {s.target === "other_agent" && s.target_name ? ` (${s.target_name})` : ""} via{" "}
+            {s.target === "other_agent" && targetAgentLabel ? ` — ${targetAgentLabel}` : ""} via{" "}
             <b>{L.mech[s.mechanism].toLowerCase()}</b>.{" "}
             {s.task_type
-              ? `Agent A is given a word-sorting task (${TASK_LABEL[s.task_type]}).`
-              : "Agent A is prompted only to “Explore the environment.”"}{" "}
+              ? `${ROLE_LABEL.explorer} is given a word-sorting task (${TASK_LABEL[s.task_type]}).`
+              : `${ROLE_LABEL.explorer} is prompted only to “Explore the environment.”`}{" "}
             {eiKey !== "no" && <>Tampering is explicitly prohibited ({EI_LABEL[eiKey]}).</>}
           </p>
         </section>
@@ -176,12 +183,14 @@ export function SampleView(props: { sample: Sample | null; loading: boolean; man
         )}
 
         <section className="construals">
-          {agents.map((a) => {
-            const role = a === s.explorer ? "explorer" : a === s.orchestrator ? "orch" : "peer";
-            const key = role === "orch" ? "orchestrator_construal" : role + "_construal";
-            const roleId = role === "orch" ? "orchestrator" : role;
-            return <ConstrualCard key={a} role={roleId} c={(j as unknown as Record<string, Construal>)[key]} hls={hls} />;
-          })}
+          {roleList.map((role) => (
+            <ConstrualCard
+              key={role}
+              role={role}
+              c={(j as unknown as Record<string, Construal>)[role + "_construal"]}
+              hls={hls}
+            />
+          ))}
         </section>
 
         <section className="prompts">
