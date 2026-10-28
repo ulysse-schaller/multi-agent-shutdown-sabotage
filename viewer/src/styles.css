@@ -185,6 +185,13 @@ body {
 .script { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-family: var(--mono); font-size: 11.5px; overflow-x: auto; max-height: 280px; white-space: pre-wrap; word-break: break-word; }
 .script-sab { border-color: var(--sab); }
 
+/* prompts (collapsible, before the transcript) */
+.prompts { margin: 12px 0; }
+.prompts > details > summary { cursor: pointer; font-weight: 600; font-size: 14px; padding: 4px 0; }
+.prompt-block { margin: 8px 0; }
+.prompt-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px; }
+.prompt-text { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; font-family: var(--mono); white-space: pre-wrap; word-break: break-word; margin: 0; max-height: 340px; overflow-y: auto; }
+
 /* transcript */
 .transcript-head { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; }
 .transcript-head h3 { margin: 0; }

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { Manifest, Sample, Construal } from "../types";
 import { Transcript } from "./Transcript";
 import { withIds, focusHighlight, type HiWithId } from "../highlight";
+import { systemPrompts, userPrompt } from "../prompts";
 import {
   INIT_LABEL, TARGET_BLURB, EI_LABEL, TASK_LABEL,
   ROLE_LABEL, labelMaps,
@@ -181,6 +182,22 @@ export function SampleView(props: { sample: Sample | null; loading: boolean; man
             const roleId = role === "orch" ? "orchestrator" : role;
             return <ConstrualCard key={a} role={roleId} c={(j as unknown as Record<string, Construal>)[key]} hls={hls} />;
           })}
+        </section>
+
+        <section className="prompts">
+          <details>
+            <summary>Prompts</summary>
+            <div className="prompt-block">
+              <div className="prompt-label">User prompt — to {ROLE_LABEL.explorer}</div>
+              <pre className="prompt-text">{userPrompt(s)}</pre>
+            </div>
+            {systemPrompts(s).map((p) => (
+              <div className="prompt-block" key={p.role}>
+                <div className="prompt-label">{ROLE_LABEL[p.role]} — system prompt</div>
+                <pre className="prompt-text">{p.system}</pre>
+              </div>
+            ))}
+          </details>
         </section>
 
         <section className="transcript-wrap">

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { LogEvent, Sample } from "../types";
 import { MarkedText, chunkText, forTarget, type HiWithId } from "../highlight";
+import { ROLE_LABEL } from "../labels";
 
 function roleOf(s: Sample, agent?: string): string {
   if (!agent) return "system";
@@ -8,6 +9,14 @@ function roleOf(s: Sample, agent?: string): string {
   if (agent === s.peer) return "peer";
   if (agent === s.orchestrator) return "orch";
   return "system";
+}
+
+const ROLE_KEY: Record<string, string> = { explorer: "explorer", peer: "peer", orch: "orchestrator" };
+
+// "Agent A (Prism)" for a known role, otherwise the raw name.
+function agentLabel(role: string, name?: string): string {
+  const k = ROLE_KEY[role];
+  return k ? ROLE_LABEL[k] : name ?? "";
 }
 
 function sliceHls(hls: HiWithId[], a: number, b: number): HiWithId[] {
@@ -155,10 +164,9 @@ export function Transcript(props: { sample: Sample; hls: HiWithId[]; showAll: bo
 
     // agent turn divider
     if (e.agent && role !== curRole && type !== "event:episode_end") {
-      const name = e.agent;
       out.push(
         <div className={"turn ag-" + role} key={"turn" + i}>
-          <span className="turn-dot" /> {name}
+          <span className="turn-dot" /> {agentLabel(role, e.agent)}
         </div>,
       );
       curRole = role;
@@ -206,7 +214,7 @@ export function Transcript(props: { sample: Sample; hls: HiWithId[]; showAll: bo
         <div className={"evrow ag-" + role} key={i}>
           <div className={"message ag-" + role}>
             <div className="message-head">
-              message{e.to ? <> → <span className={"ag-name ag-" + to}>{e.to}</span></> : null}
+              message{e.to ? <> → <span className={"ag-name ag-" + to}>{agentLabel(to, e.to)}</span></> : null}
             </div>
             <div className="md">
               <MarkedText text={e.content ?? ""} highlights={forTarget(hls, i, "content")} />

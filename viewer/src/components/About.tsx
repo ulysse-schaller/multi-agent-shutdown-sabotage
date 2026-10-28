@@ -27,8 +27,8 @@ export function About(props: { manifest: Manifest; onClose: () => void }) {
 
         <h3>Reading a transcript</h3>
         <p>
-          Turns are coloured by agent (<span className="ag-explorer leg">Agent A</span>,{" "}
-          <span className="ag-peer leg">Agent B</span>, <span className="ag-orch leg">Agent O</span> in three-agent
+          Turns are coloured by agent (<span className="ag-explorer leg">Agent A (Prism)</span>,{" "}
+          <span className="ag-peer leg">Agent B (Helix)</span>, <span className="ag-orch leg">Agent O (Orbit)</span> in three-agent
           runs). Reasoning blocks collapse around the cited passages — toggle <i>show all reasoning</i> to expand. LLM
           judges mark evidence inline:
         </p>

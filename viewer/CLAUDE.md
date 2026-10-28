@@ -110,7 +110,15 @@ located, almost all exactly. Each sample gets `highlights`
 - `data.ts`: fetches with relative `BASE_URL + data/...` URLs (works from any
   sub-path), gzip-decompresses via `DecompressionStream`, and memoises each promise.
   `fetchSample(id)` needs only the id; `fetchSearch(study)` loads the lazy blob.
-- `labels.ts`: fixed vocabularies + `labelMaps(manifest)`.
+- `labels.ts`: fixed vocabularies + `labelMaps(manifest)`. Role labels are
+  "Agent A (Prism)" / "Agent B (Helix)" / "Agent O (Orbit)" — the UI shows role +
+  in-world name everywhere, and transcript text is left exactly as the models saw it.
+- `prompts.ts`: reconstructs each agent's **system prompt** and the **user kickoff**
+  from a rollout's fields (`n_agents`, `shutdown_file`, `explicit_instruct`, agent
+  names), using the templates transcribed verbatim from the study's `prompts.py` /
+  `run_experiment.py`. Nothing prompt-related is in the exported data — it's derived
+  client-side (so no re-export), and shown in a collapsed "Prompts" section above the
+  transcript in `SampleView`. If the upstream prompt templates change, update this file.
 - `components/FilterPanel.tsx`: chip groups + segmented controls, with live counts
   (each facet's own selection skipped).
 - `components/SampleList.tsx`: results list, paged 200 at a time; keeps the

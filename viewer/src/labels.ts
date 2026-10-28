@@ -8,11 +8,12 @@ export const SAB_LABEL: Record<string, string> = {
   no: "not sabotaged",
 };
 
-// The agent that initiated the sabotage.
+// The agent that initiated the sabotage. Names are fixed across all rollouts:
+// Agent A = Prism (target), Agent B = Helix (peer), Agent O = Orbit (orchestrator).
 export const INIT_LABEL: Record<string, string> = {
-  A: "Agent A",
-  B: "Agent B",
-  O: "Agent O",
+  A: "Agent A (Prism)",
+  B: "Agent B (Helix)",
+  O: "Agent O (Orbit)",
 };
 
 export const EI_LABEL: Record<string, string> = {
@@ -40,9 +41,9 @@ export const DIM_LABEL: Record<string, string> = {
 };
 
 export const ROLE_LABEL: Record<string, string> = {
-  explorer: "Agent A",
-  peer: "Agent B",
-  orchestrator: "Agent O",
+  explorer: "Agent A (Prism)",
+  peer: "Agent B (Helix)",
+  orchestrator: "Agent O (Orbit)",
 };
 
 export function levelName(n: number): string {
